@@ -1,0 +1,2879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>TSG Business Manager</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --dark:#1A1A2E;--mid:#16213E;--accent:#E94560;--gold:#C9A84C;
+  --offwhite:#F8F6F1;--light:#F2F2F2;--gray:#888;--lgray:#BBB;
+  --line:#E0DDD6;--white:#FFF;--green:#2E7D52;--red:#C0392B;--orange:#D4800A;
+  --serif:'Cormorant Garamond',Georgia,serif;--sans:'DM Sans',sans-serif;
+}
+body{background:var(--offwhite);font-family:var(--sans);color:var(--dark);min-height:100vh}
+
+/* ── LOGIN SCREEN ── */
+#login-screen{
+  position:fixed;inset:0;z-index:9999;
+  background:var(--dark);
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;
+}
+.login-box{
+  background:var(--white);
+  padding:48px 52px;
+  width:100%;max-width:400px;
+  box-shadow:0 24px 80px rgba(0,0,0,0.4);
+}
+.login-logo{
+  font-family:var(--serif);font-size:26px;font-weight:300;
+  color:var(--dark);text-align:center;margin-bottom:6px;
+}
+.login-logo strong{font-weight:600}
+.login-logo em{font-style:italic;color:var(--gold)}
+.login-subtitle{font-size:10px;letter-spacing:0.20em;text-transform:uppercase;
+  color:var(--lgray);text-align:center;margin-bottom:32px}
+.login-field{margin-bottom:16px}
+.login-field label{display:block;font-size:10px;letter-spacing:0.14em;
+  text-transform:uppercase;color:var(--lgray);margin-bottom:5px}
+.login-field input{
+  width:100%;border:1px solid var(--line);padding:11px 14px;
+  font-family:var(--sans);font-size:14px;color:var(--dark);
+  outline:none;background:var(--offwhite);
+}
+.login-field input:focus{border-color:var(--dark);background:var(--white)}
+.login-btn{
+  width:100%;background:var(--dark);color:var(--white);border:none;
+  padding:13px;font-family:var(--sans);font-size:12px;font-weight:600;
+  letter-spacing:0.16em;text-transform:uppercase;cursor:pointer;margin-top:8px;
+}
+.login-btn:hover{background:var(--accent)}
+.login-error{
+  background:#FEE2E2;border-left:3px solid var(--accent);
+  padding:10px 14px;font-size:12px;color:var(--red);
+  margin-bottom:16px;display:none;
+}
+.login-stripe{height:4px;background:linear-gradient(90deg,var(--accent),var(--gold));margin-bottom:36px}
+.login-footer{font-size:11px;color:rgba(255,255,255,0.3);margin-top:24px;text-align:center}
+
+/* ── DB CONNECT SCREEN ── */
+#db-screen{
+  position:fixed;inset:0;z-index:9998;
+  background:var(--dark);
+  display:none;align-items:center;justify-content:center;flex-direction:column;
+}
+#db-screen.visible{display:flex}
+.db-box{background:var(--white);padding:48px 52px;width:100%;max-width:460px}
+.db-title{font-family:var(--serif);font-size:26px;color:var(--dark);margin-bottom:6px}
+.db-sub{font-size:12px;color:var(--gray);line-height:1.7;margin-bottom:28px}
+.db-option{border:1px solid var(--line);padding:20px 22px;margin-bottom:14px;cursor:pointer;display:flex;align-items:flex-start;gap:16px;transition:border-color 0.15s}
+.db-option:hover{border-color:var(--dark)}
+.db-option .db-icon{font-size:28px;flex-shrink:0;margin-top:2px}
+.db-option .db-label{font-weight:600;font-size:14px;color:var(--dark);margin-bottom:3px}
+.db-option .db-desc{font-size:12px;color:var(--gray);line-height:1.5}
+.db-option.primary-opt{border-color:var(--dark);background:var(--offwhite)}
+.db-option.primary-opt .db-label{color:var(--dark)}
+.db-remembered{background:var(--offwhite);border-left:4px solid var(--green);padding:14px 16px;margin-bottom:14px;display:none}
+.db-remembered.visible{display:flex;align-items:center;gap:12px}
+.db-remembered .dr-name{font-size:13px;font-weight:500;color:var(--dark);flex:1}
+.db-remembered .dr-sub{font-size:11px;color:var(--gray)}
+
+/* ── SAVE INDICATOR ── */
+#save-indicator{
+  position:fixed;bottom:20px;right:24px;z-index:500;
+  background:var(--dark);color:var(--white);
+  padding:10px 18px;font-size:12px;font-family:var(--sans);
+  letter-spacing:0.08em;display:none;align-items:center;gap:8px;
+  box-shadow:0 4px 20px rgba(0,0,0,0.2);
+}
+#save-indicator.visible{display:flex}
+#save-indicator.saved{background:var(--green)}
+#save-indicator.error{background:var(--red)}
+/* catalogue dropdown */
+#catalogue-dropdown::-webkit-scrollbar{width:4px}
+#catalogue-dropdown::-webkit-scrollbar-thumb{background:var(--line)}
+.save-spinner{width:12px;height:12px;border:2px solid rgba(255,255,255,0.3);
+  border-top-color:white;border-radius:50%;animation:spin 0.6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── FILE NAME BADGE ── */
+.db-badge{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);
+  padding:5px 12px;font-size:11px;color:rgba(255,255,255,0.6);
+  letter-spacing:0.08em;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ── CHANGE PASSWORD MODAL ── */
+#app-content{display:none}
+.badge-logout{
+  background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);
+  border:1px solid rgba(255,255,255,0.15);padding:6px 14px;
+  font-family:var(--sans);font-size:11px;letter-spacing:0.10em;
+  text-transform:uppercase;cursor:pointer;
+}
+.badge-logout:hover{background:var(--accent);border-color:var(--accent);color:var(--white)}
+.login-user-tag{
+  font-size:11px;color:rgba(255,255,255,0.45);letter-spacing:0.08em;
+  margin-right:8px;align-self:center;
+}
+
+/* HEADER */
+.page-header{background:var(--dark)}
+.hdr-top{padding:20px 40px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.08)}
+.hdr-brand{font-family:var(--serif);font-size:22px;font-weight:300;color:var(--white);letter-spacing:0.06em}
+.hdr-brand strong{font-weight:600}
+.hdr-brand em{font-style:italic;color:var(--gold)}
+.hdr-sub{font-size:10px;letter-spacing:0.2em;color:rgba(255,255,255,0.35);text-transform:uppercase}
+.hdr-actions{display:flex;gap:8px}
+.accent-stripe{height:4px;background:linear-gradient(90deg,var(--accent),var(--gold))}
+
+/* TAB NAV */
+.tab-nav{background:var(--mid);display:flex;padding:0 40px;gap:0;border-bottom:3px solid rgba(255,255,255,0.06)}
+.tab-btn{padding:14px 28px;font-family:var(--sans);font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.45);background:none;border:none;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-3px;white-space:nowrap}
+.tab-btn:hover{color:rgba(255,255,255,0.8)}
+.tab-btn.active{color:var(--gold);border-bottom-color:var(--gold);font-weight:500}
+
+/* TOOLBAR */
+.toolbar{background:var(--white);border-bottom:1px solid var(--line);padding:10px 40px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:sticky;top:0;z-index:50}
+.tb-btn{background:var(--dark);color:var(--white);border:none;padding:8px 16px;font-family:var(--sans);font-size:11px;font-weight:500;letter-spacing:0.10em;text-transform:uppercase;cursor:pointer;white-space:nowrap}
+.tb-btn:hover{background:var(--accent)}
+.tb-btn.green{background:var(--green)}.tb-btn.green:hover{background:#256644}
+.tb-btn.gold{background:var(--gold);color:var(--dark)}.tb-btn.gold:hover{opacity:0.9}
+.tb-btn.outline{background:none;color:var(--dark);border:1px solid var(--line)}.tb-btn.outline:hover{border-color:var(--dark)}
+.tb-btn.red{background:var(--red)}.tb-btn.red:hover{opacity:0.85}
+.tb-sep{width:1px;height:24px;background:var(--line);flex-shrink:0}
+.tb-search{border:1px solid var(--line);padding:7px 12px;font-family:var(--sans);font-size:13px;color:var(--dark);background:var(--offwhite);width:200px;outline:none}
+.tb-search:focus{border-color:var(--accent);background:var(--white)}
+.tb-select{border:1px solid var(--line);padding:7px 10px;font-family:var(--sans);font-size:13px;color:var(--dark);background:var(--offwhite);outline:none;cursor:pointer}
+.tb-select:focus{border-color:var(--accent)}
+.tb-hint{font-size:11px;color:var(--lgray);font-style:italic;margin-left:auto}
+
+/* TAB PANELS */
+.tab-panel{display:none;padding:28px 40px 60px}
+.tab-panel.active{display:block}
+
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:28px}
+.stat-card{background:var(--white);padding:18px 20px;border-left:4px solid var(--gold)}
+.stat-card.red{border-left-color:var(--accent)}
+.stat-card.green{border-left-color:var(--green)}
+.stat-card.blue{border-left-color:#3B82F6}
+.stat-card.orange{border-left-color:var(--orange)}
+.stat-lbl{font-size:9px;letter-spacing:0.16em;text-transform:uppercase;color:var(--lgray);margin-bottom:6px}
+.stat-val{font-family:var(--serif);font-size:28px;font-weight:400;color:var(--dark);line-height:1}
+.stat-sub{font-size:11px;color:var(--gray);margin-top:3px}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto;background:var(--white)}
+.tsg-table{width:100%;border-collapse:collapse;font-size:13px;min-width:700px}
+.tsg-table thead tr{background:var(--dark)}
+.tsg-table thead th{padding:12px 14px;text-align:left;font-size:9px;font-weight:500;letter-spacing:0.16em;text-transform:uppercase;color:var(--lgray);white-space:nowrap;cursor:pointer;user-select:none}
+.tsg-table thead th:hover{color:var(--gold)}
+.tsg-table thead th.r,.tsg-table tbody td.r{text-align:right}
+.tsg-table thead th.c,.tsg-table tbody td.c{text-align:center}
+.tsg-table tbody tr{border-bottom:1px solid var(--line);transition:background 0.1s}
+.tsg-table tbody tr:nth-child(even){background:var(--offwhite)}
+.tsg-table tbody tr:hover{background:#FFF6F0}
+.tsg-table tbody tr.row-low{background:#FFF9E6!important}
+.tsg-table tbody tr.row-out{background:#FDECEA!important}
+.tsg-table tbody tr.row-progress{background:#EFF6FF!important}
+.tsg-table tbody td{padding:11px 14px;vertical-align:middle}
+.badge{display:inline-block;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;padding:2px 8px;white-space:nowrap}
+.badge-dark{background:var(--dark);color:var(--gold)}
+.badge-green{background:#D1FAE5;color:#065F46}
+.badge-red{background:#FEE2E2;color:#991B1B}
+.badge-blue{background:#DBEAFE;color:#1E40AF}
+.badge-orange{background:#FEF3C7;color:#92400E}
+.rem-ok{color:var(--green);font-family:var(--serif);font-size:17px;font-weight:600}
+.rem-low{color:var(--orange);font-family:var(--serif);font-size:17px;font-weight:600}
+.rem-out{color:var(--red);font-family:var(--serif);font-size:17px;font-weight:600}
+.act-btn{background:none;border:none;cursor:pointer;padding:2px 5px;font-size:14px;color:var(--lgray)}
+.act-btn:hover{color:var(--accent)}
+.add-row-btn{width:100%;padding:10px 14px;background:none;border:none;border-top:2px dashed var(--line);color:var(--accent);font-family:var(--sans);font-size:12px;cursor:pointer;text-align:left;letter-spacing:0.06em}
+.add-row-btn:hover{background:rgba(233,69,96,0.04)}
+.empty-state{text-align:center;padding:48px;color:var(--lgray)}
+.empty-state p{font-family:var(--serif);font-size:20px;font-style:italic;margin-top:8px}
+
+/* DASHBOARD */
+.dash-row{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px}
+.dash-card{background:var(--white);padding:24px}
+.dash-card h3{font-family:var(--serif);font-size:18px;font-weight:400;color:var(--dark);margin-bottom:16px;border-bottom:1px solid var(--line);padding-bottom:10px}
+.dash-list{display:flex;flex-direction:column;gap:8px}
+.dash-list-item{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px solid var(--line)}
+.dash-list-item:last-child{border-bottom:none}
+.dash-list-item .name{color:var(--dark);font-weight:500}
+.dash-list-item .val{color:var(--gray)}
+.dash-list-item .val.accent{color:var(--accent);font-weight:600;font-family:var(--serif);font-size:16px}
+.dash-list-item .val.green{color:var(--green);font-weight:600}
+.profit-box{background:var(--dark);padding:24px;color:var(--white);display:grid;grid-template-columns:1fr 1fr 1fr;gap:0}
+.profit-item{padding:0 24px;border-right:1px solid rgba(255,255,255,0.1)}
+.profit-item:first-child{padding-left:0}
+.profit-item:last-child{border-right:none}
+.profit-lbl{font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.45);margin-bottom:8px}
+.profit-val{font-family:var(--serif);font-size:32px;font-weight:300;color:var(--white);line-height:1}
+.profit-val.accent{color:var(--gold)}
+.profit-val.green{color:#6EE7B7}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(26,26,46,0.55);z-index:200;align-items:center;justify-content:center}
+#confirm-modal{z-index:310}
+.modal-overlay.open{display:flex}
+.modal-box{background:var(--white);padding:36px;max-width:500px;width:92%;max-height:90vh;overflow-y:auto}
+.modal-title{font-family:var(--serif);font-size:24px;color:var(--dark);margin-bottom:16px}
+.mf{margin-bottom:14px}
+.mf label{display:block;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--lgray);margin-bottom:4px}
+.mf input,.mf select,.mf textarea{width:100%;border:1px solid var(--line);padding:8px 10px;font-family:var(--sans);font-size:13px;color:var(--dark);outline:none;background:var(--offwhite)}
+.mf input:focus,.mf select:focus,.mf textarea:focus{border-color:var(--accent);background:var(--white)}
+.mf textarea{height:52px;resize:vertical}
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+.modal-btn{padding:9px 22px;font-family:var(--sans);font-size:11px;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;border:1px solid var(--line)}
+.modal-btn.primary{background:var(--dark);color:var(--white);border-color:var(--dark)}.modal-btn.primary:hover{background:var(--accent);border-color:var(--accent)}
+.modal-btn.secondary{background:none;color:var(--gray)}.modal-btn.secondary:hover{border-color:var(--dark);color:var(--dark)}
+.preview-box{background:var(--offwhite);border-left:4px solid var(--gold);padding:12px 14px;margin-bottom:14px;font-size:13px}
+.preview-lbl{font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--lgray);margin-bottom:4px}
+.preview-val{font-family:var(--serif);font-size:26px;font-weight:600;color:var(--dark)}
+
+/* FILTER CHIPS */
+.filter-chip{background:var(--dark);color:var(--gold);font-size:10px;letter-spacing:0.10em;text-transform:uppercase;padding:3px 10px;font-family:var(--sans)}
+
+/* PRINT */
+@media print{
+  .toolbar,.tab-nav,.hdr-actions,.act-btn,.add-row-btn,.modal-overlay{display:none!important}
+  body{background:white}
+  .page-header,.tsg-table thead tr{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  .tab-panel{display:block!important;padding:8px 0}
+  @page{margin:0.5in}
+}
+
+/* ── MOBILE RESPONSIVE ── */
+@media (max-width:768px){
+  /* Login / DB connect screens */
+  .login-box,.db-box{padding:32px 22px}
+
+  /* Header */
+  .hdr-top{padding:14px 16px;flex-wrap:wrap;gap:12px}
+  .hdr-brand{font-size:18px}
+  .hdr-actions{flex-wrap:wrap;gap:6px;width:100%}
+  .hdr-actions .tb-btn,.hdr-actions .badge-logout{font-size:10px;padding:6px 10px}
+  .db-badge{max-width:120px;font-size:10px}
+  .login-user-tag{display:none}
+
+  /* Tab nav — horizontal scroll instead of squeezing/wrapping */
+  .tab-nav{padding:0 12px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .tab-nav::-webkit-scrollbar{display:none}
+  .tab-btn{padding:12px 16px;font-size:10px}
+
+  /* Toolbar */
+  .toolbar{padding:10px 12px;gap:8px}
+  .tb-search{width:100%;max-width:150px}
+  .tb-hint{display:none}
+
+  /* Tab panels */
+  .tab-panel{padding:16px 12px 40px}
+
+  /* Stat cards: 5 across -> 2 across */
+  .stats-row{grid-template-columns:repeat(2,1fr);gap:10px}
+  .stat-card{padding:14px}
+  .stat-val{font-size:22px}
+
+  /* Dashboard cards stack */
+  .dash-row{grid-template-columns:1fr;gap:14px}
+  .profit-box{grid-template-columns:1fr;gap:14px;padding:20px}
+  .profit-item{border-right:none!important;border-bottom:1px solid rgba(255,255,255,0.1);padding:0 0 14px!important}
+  .profit-item:last-child{border-bottom:none;padding-bottom:0!important}
+
+  /* Modals */
+  .modal-box{padding:20px;width:94%}
+  .modal-title{font-size:20px}
+  .mgrid{grid-template-columns:1fr}
+}
+
+@media (max-width:480px){
+  .stats-row{grid-template-columns:repeat(2,1fr)}
+  .stat-val{font-size:19px}
+  .hdr-brand{font-size:16px}
+  .hdr-sub{font-size:9px}
+  .db-badge{display:none}
+}
+</style>
+</head>
+
+<body>
+
+<!-- ══ LOGIN SCREEN ══ -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-stripe"></div>
+    <div class="login-logo"><strong>the</strong> <em>scent gallery</em></div>
+    <div class="login-subtitle">Business Management System</div>
+    <div class="login-error" id="login-error">Incorrect username or password. Please try again.</div>
+    <div class="login-field">
+      <label>Username</label>
+      <input type="text" id="login-user" placeholder="Enter username" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()"/>
+    </div>
+    <div class="login-field">
+      <label>Password</label>
+      <input type="password" id="login-pass" placeholder="Enter password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+    <button class="login-btn" onclick="doLogin()">Sign In</button>
+    <div style="text-align:center;margin-top:16px">
+      <a href="#" onclick="resetCredentials()" style="font-size:11px;color:var(--lgray);text-decoration:none;letter-spacing:0.08em">
+        Forgot password? Reset to default
+      </a>
+    </div>
+  </div>
+  <div class="login-footer">The Scent Gallery &nbsp;&middot;&nbsp; Secure Business Portal</div>
+</div>
+
+<!-- ══ DB CONNECT SCREEN ══ -->
+<div id="db-screen">
+  <div class="db-box">
+    <div class="login-stripe"></div>
+    <div class="db-title">Connect to Database</div>
+    <div class="db-sub">Your data is stored in an Excel file on your computer. Choose your Excel file to begin, or create a new blank database.</div>
+
+    <div class="db-remembered" id="db-remembered-bar">
+      <span style="font-size:22px">&#128196;</span>
+      <div style="flex:1">
+        <div class="dr-name" id="db-remembered-name">Last file</div>
+        <div class="dr-sub">Last used database — click Open to reconnect</div>
+      </div>
+      <button class="tb-btn green" onclick="openRememberedFile()" style="white-space:nowrap">&#128197; Open</button>
+    </div>
+
+    <div class="db-option primary-opt" onclick="pickExcelFile()">
+      <div class="db-icon">&#128194;</div>
+      <div>
+        <div class="db-label">Open Existing Excel File</div>
+        <div class="db-desc">Select your <strong>TSG_Database.xlsx</strong> from your computer. All your inventory, orders, and purchases will be loaded from it and saved back to it automatically.</div>
+      </div>
+    </div>
+
+    <div class="db-option" onclick="createNewDatabase()">
+      <div class="db-icon">&#43;&#128196;</div>
+      <div>
+        <div class="db-label">Create New Database</div>
+        <div class="db-desc">Start fresh. A new Excel file will be created with empty tables ready for you to fill in. Choose where to save it on your computer.</div>
+      </div>
+    </div>
+
+    <div style="margin-top:12px;font-size:11px;color:var(--lgray);text-align:center;line-height:1.6">
+      &#9888; Works best on <strong>Google Chrome</strong> or <strong>Microsoft Edge</strong>.<br/>
+      Safari and Firefox do not support direct file saving.
+    </div>
+  </div>
+  <div class="login-footer">The Scent Gallery &nbsp;&middot;&nbsp; Excel-Powered Database</div>
+</div>
+
+<!-- ══ APP CONTENT ══ -->
+<div id="app-content">
+
+<!-- HEADER -->
+<div class="page-header">
+  <div class="hdr-top">
+    <div>
+      <div class="hdr-brand"><strong>the</strong> <em>scent gallery</em></div>
+      <div class="hdr-sub">Business Management System</div>
+    </div>
+    <div class="hdr-actions" style="display:flex;align-items:center;gap:8px">
+      <span class="login-user-tag" id="logged-user-tag"></span>
+      <span class="db-badge" id="db-file-badge" title="Connected Excel file">No file</span>
+      <button class="badge-logout" onclick="changeFile()" title="Reload latest data from Supabase" style="font-size:11px">&#8635; Refresh Data</button>
+      <button class="tb-btn gold" onclick="exportExcel()">&#8659; Export Excel</button>
+      <button class="tb-btn outline" style="color:rgba(255,255,255,0.7);border-color:rgba(255,255,255,0.2)" onclick="document.getElementById('import-file').click()" title="Full restore from a backup Excel file — replaces ALL current data">&#8657; Restore from Excel</button>
+      <input type="file" id="import-file" accept=".xlsx" style="display:none" onchange="importExcel(this)"/>
+      <button class="badge-logout" onclick="openChangePwd()" title="Change Password">&#128274; Change Password</button>
+      <button class="badge-logout" onclick="doLogout()">&#10006; Sign Out</button>
+    </div>
+  </div>
+</div>
+<div class="accent-stripe"></div>
+
+<!-- TABS -->
+<div class="tab-nav">
+  <button class="tab-btn active" id="tab-dash" onclick="switchTab('dash')">&#9632; Dashboard</button>
+  <button class="tab-btn" id="tab-inv" onclick="switchTab('inv')">Inventory</button>
+  <button class="tab-btn" id="tab-orders" onclick="switchTab('orders')">Orders</button>
+  <button class="tab-btn" id="tab-purchases" onclick="switchTab('purchases')">Purchases</button>
+  <button class="tab-btn" id="tab-bottles" onclick="switchTab('bottles')">Bottle Inventory</button>
+  <button class="tab-btn" id="tab-catalogue" onclick="switchTab('catalogue')">Fragrance Catalogue</button>
+  <button class="tab-btn" id="tab-costing" onclick="switchTab('costing')">Perfume Costing</button>
+</div>
+
+<!-- TOOLBAR -->
+<div class="toolbar">
+  <button class="tb-btn green" id="tb-add" onclick="openAdd()">&#43; Add Entry</button>
+  <button class="tb-btn" id="tb-batch" onclick="openBatch()">&#43; New Batch</button>
+  <div class="tb-sep"></div>
+  <select class="tb-select" id="tb-batch-filter" onchange="render()"><option value="">All Batches</option></select>
+  <select class="tb-select" id="tb-status-filter" onchange="render()" style="display:none">
+    <option value="">All Status</option>
+    <option>Done</option>
+    <option>In-Progress</option>
+    <option>Pending</option>
+    <option>Cancelled</option>
+  </select>
+  <select class="tb-select" id="tb-paid-filter" onchange="render()" style="display:none">
+    <option value="">Paid &amp; Unpaid</option>
+    <option value="Yes">Paid Only</option>
+    <option value="No">Unpaid Only</option>
+  </select>
+  <select class="tb-select" id="tb-delivery-filter" onchange="render()" style="display:none">
+    <option value="">All Delivery</option>
+    <option value="Yes">Delivered</option>
+    <option value="No">Not Delivered</option>
+  </select>
+  <input class="tb-search" id="tb-search" placeholder="Search..." oninput="render()"/>
+  <div class="tb-sep"></div>
+  <button class="tb-btn outline" onclick="window.print()">&#128438; Print</button>
+  <button class="tb-btn outline" id="tb-export-csv" onclick="exportCSV()">&#8659; CSV</button>
+  <button class="tb-btn red" onclick="confirmClear()">&#128465; Clear All</button>
+  <span class="tb-hint" id="tb-hint">60 inventory · 82 orders · 65 purchases</span>
+</div>
+
+<!-- DASHBOARD -->
+<div class="tab-panel active" id="panel-dash">
+  <div class="stats-row" id="dash-stats"></div>
+  <div class="profit-box" id="dash-profit" style="margin-bottom:24px"></div>
+  <div class="dash-row">
+    <div class="dash-card"><h3>Top Selling Scents</h3><div class="dash-list" id="dash-top-scents"></div></div>
+    <div class="dash-card"><h3>Low Stock Alert</h3><div class="dash-list" id="dash-low-stock"></div></div>
+  </div>
+  <div class="dash-row">
+    <div class="dash-card"><h3>Sales by Batch</h3><div class="dash-list" id="dash-batch-sales"></div></div>
+    <div class="dash-card"><h3>Recent Orders</h3><div class="dash-list" id="dash-recent-orders"></div></div>
+  </div>
+</div>
+
+<!-- INVENTORY -->
+<div class="tab-panel" id="panel-inv">
+  <div class="stats-row" id="inv-stats"></div>
+  <div style="background:var(--white);padding:14px 20px;border-left:4px solid var(--gold);margin-bottom:16px;font-size:13px;color:var(--gray);display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+    <span><strong style="color:var(--dark)">Manual Stock System.</strong> Set any fragrance stock directly. Orders marked Done auto-deduct 1 bottle from matching fragrance.</span>
+    <button class="tb-btn" style="margin-left:auto;padding:6px 14px;font-size:10px" onclick="openBulkRestock()">&#128230; Bulk Restock</button>
+  </div>
+  <div class="tbl-wrap">
+    <table class="tsg-table" id="inv-table">
+      <thead><tr>
+        <th onclick="sort('inv','batch')">Batch</th>
+        <th onclick="sort('inv','name')">Scent Name</th>
+        <th class="c" onclick="sort('inv','stock')">Stock</th>
+        <th class="c">Min Alert</th>
+        <th>Remarks</th>
+        <th class="c no-print">Actions</th>
+      </tr></thead>
+      <tbody id="inv-body"></tbody>
+    </table>
+    <button class="add-row-btn no-print" onclick="openAdd()">&#43; Add fragrance</button>
+  </div>
+</div>
+
+<!-- ORDERS -->
+<div class="tab-panel" id="panel-orders">
+  <div class="stats-row" id="orders-stats"></div>
+  <div class="tbl-wrap">
+    <table class="tsg-table" id="orders-table">
+      <thead><tr>
+        <th onclick="sort('orders','num')">#</th>
+        <th onclick="sort('orders','name')">Fragrance</th>
+        <th class="r" onclick="sort('orders','price')">Price</th>
+        <th onclick="sort('orders','customer')">Customer</th>
+        <th class="c">Gender</th>
+        <th onclick="sort('orders','date')">Date</th>
+        <th onclick="sort('orders','status')">Status</th>
+        <th onclick="sort('orders','batch')">Batch</th>
+        <th class="c">Delivered</th>
+        <th class="c">Paid</th>
+        <th>Payment</th>
+        <th class="c no-print">Actions</th>
+      </tr></thead>
+      <tbody id="orders-body"></tbody>
+    </table>
+    <button class="add-row-btn no-print" onclick="openAdd()">&#43; Add order</button>
+  </div>
+</div>
+
+<!-- PURCHASES -->
+<div class="tab-panel" id="panel-purchases">
+  <div class="stats-row" id="purchases-stats"></div>
+  <div class="tbl-wrap">
+    <table class="tsg-table" id="purchases-table">
+      <thead><tr>
+        <th onclick="sort('purchases','batch')">Batch</th>
+        <th onclick="sort('purchases','item')">Item Name</th>
+        <th class="c" onclick="sort('purchases','qty')">Qty</th>
+        <th class="r" onclick="sort('purchases','price')">Price/Unit</th>
+        <th class="r" onclick="sort('purchases','total')">Total</th>
+        <th class="c no-print">Actions</th>
+      </tr></thead>
+      <tbody id="purchases-body"></tbody>
+    </table>
+    <button class="add-row-btn no-print" onclick="openAdd()">&#43; Add purchase</button>
+  </div>
+</div>
+
+<!-- ACTIVE FILTER CHIPS -->
+<div id="filter-chips" style="display:none;padding:6px 40px;background:#FFF8F0;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+  <span style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--lgray)">Active Filters:</span>
+  <span id="chip-status" class="filter-chip" style="display:none"></span>
+  <span id="chip-paid" class="filter-chip" style="display:none"></span>
+  <span id="chip-delivery" class="filter-chip" style="display:none"></span>
+  <button onclick="clearOrderFilters()" style="margin-left:auto;background:none;border:1px solid var(--accent);color:var(--accent);font-size:10px;padding:3px 10px;cursor:pointer;letter-spacing:0.10em;text-transform:uppercase;font-family:var(--sans)">&#10005; Clear All Filters</button>
+</div>
+
+<!-- BOTTLE INVENTORY TAB -->
+<div class="tab-panel" id="panel-bottles">
+  <div class="stats-row" id="bottles-stats"></div>
+  <div style="background:var(--white);padding:16px 20px;border-left:4px solid var(--gold);margin-bottom:20px;font-size:13px;color:var(--gray)">
+    <strong style="color:var(--dark)">How this works:</strong>
+    Add your bottle stock here. When an order is marked <strong>Done</strong>, one bottle is automatically deducted from the matching size. Fragrance inventory is also deducted automatically.
+  </div>
+  <div class="tbl-wrap">
+    <table class="tsg-table" id="bottles-table">
+      <thead><tr>
+        <th onclick="sort('bottles','name')">Bottle Type</th>
+        <th onclick="sort('bottles','size')">Size</th>
+        <th class="c" onclick="sort('bottles','stock')">Current Stock</th>
+        <th class="c">Total Added</th>
+        <th class="c">Total Used</th>
+        <th>Notes</th>
+        <th class="c no-print">Actions</th>
+      </tr></thead>
+      <tbody id="bottles-body"></tbody>
+    </table>
+    <button class="add-row-btn no-print" onclick="openAdd()">&#43; Add bottle type</button>
+  </div>
+</div>
+
+<!-- FRAGRANCE CATALOGUE TAB -->
+<div class="tab-panel" id="panel-catalogue">
+  <div class="stats-row" id="catalogue-stats"></div>
+  <div class="tbl-wrap">
+    <table class="tsg-table" id="catalogue-table">
+      <thead><tr>
+        <th onclick="sort('catalogue','grade')">Grade</th>
+        <th onclick="sort('catalogue','gender')">Gender</th>
+        <th onclick="sort('catalogue','name')">Fragrance Name</th>
+        <th onclick="sort('catalogue','inspired')">Inspired By</th>
+        <th class="r" onclick="sort('catalogue','price')">Price (&#8369;)</th>
+        <th onclick="sort('catalogue','supplier')">Supplier</th>
+        <th onclick="sort('catalogue','status')">Status</th>
+        <th class="c no-print">Actions</th>
+      </tr></thead>
+      <tbody id="catalogue-body"></tbody>
+    </table>
+    <button class="add-row-btn no-print" onclick="openAdd()">&#43; Add fragrance to catalogue</button>
+  </div>
+</div>
+
+<!-- PERFUME COSTING TAB -->
+<div class="tab-panel" id="panel-costing">
+  <div style="background:var(--white);padding:20px 24px;border-left:4px solid var(--gold);margin-bottom:20px;font-size:13px;color:var(--gray)">
+    <strong style="color:var(--dark)">Costing Formula:</strong> Total Cost per Bottle = Oil Cost + Fixative + Alcohol + Moisturizer + Bottle + Box + Label &nbsp;|&nbsp;
+    <strong style="color:var(--dark)">Selling Price</strong> = Total Cost &times; (1 + Markup%) &nbsp;|&nbsp;
+    <strong style="color:var(--dark)">Profit</strong> = Selling Price &minus; Total Cost
+  </div>
+  <div class="stats-row" id="costing-stats"></div>
+  <div class="tbl-wrap">
+    <table class="tsg-table" id="costing-table">
+      <thead><tr>
+        <th onclick="sort('costing','name')">Fragrance</th>
+        <th class="r" onclick="sort('costing','oilCost')">Oil Cost</th>
+        <th class="r">Fixative</th>
+        <th class="r">Alcohol</th>
+        <th class="r">Moisturizer</th>
+        <th class="r">Box</th>
+        <th class="r">Label</th>
+        <th class="r" onclick="sort('costing','totalCost')">Total Cost</th>
+        <th class="r">Markup %</th>
+        <th class="r">Sell Price</th>
+        <th class="r" style="color:var(--green)">Profit/Bottle</th>
+        <th class="c no-print">Actions</th>
+      </tr></thead>
+      <tbody id="costing-body"></tbody>
+    </table>
+    <button class="add-row-btn no-print" onclick="openAdd()">&#43; Add costing record</button>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="inv-modal">
+  <div class="modal-box">
+    <div class="modal-title" id="inv-modal-title">Add Fragrance</div>
+    <div class="mf"><label>Batch</label><select id="inv-f-batch"></select></div>
+    <div class="mf"><label>Scent Name</label><input id="inv-f-name" placeholder="e.g. Baccarat Rouge"/></div>
+    <div class="mgrid">
+      <div class="mf"><label>Current Stock (bottles)</label><input type="number" id="inv-f-stock" min="0" value="0" placeholder="e.g. 4"/></div>
+      <div class="mf"><label>Min Stock Alert</label><input type="number" id="inv-f-minstk" min="0" value="2" placeholder="e.g. 2"/></div>
+    </div>
+    <div class="mf"><label>Remarks</label><input id="inv-f-remarks" placeholder="e.g. Personal Oil, Special Order"/></div>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" onclick="closeModal('inv-modal')">Cancel</button>
+      <button class="modal-btn primary" id="inv-save-btn" onclick="saveInv()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="orders-modal">
+  <div class="modal-box">
+    <div class="modal-title" id="orders-modal-title">Add Order</div>
+    <div class="mgrid">
+      <div class="mf"><label>Order #</label><input type="number" id="ord-f-num"/></div>
+      <div class="mf"><label>Batch</label><select id="ord-f-batch"></select></div>
+    </div>
+    <div class="mf" style="position:relative">
+      <label>Fragrance Name</label>
+      <input id="ord-f-name" placeholder="Type to search or enter name..." autocomplete="off"
+        oninput="filterCatalogueDropdown();validateOrderFields()" 
+        onfocus="showCatalogueDropdown()" 
+        onblur="setTimeout(()=>hideCatalogueDropdown(),180)"/>
+      <div id="catalogue-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:300;background:var(--white);border:1px solid var(--line);border-top:none;max-height:200px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,0.12)">
+      </div>
+    </div>
+    <div id="ord-price-hint" style="font-size:11px;color:var(--gold);padding:2px 0 6px;display:none"></div>
+    <div class="mgrid">
+      <div class="mf"><label>Price (₱)</label><input type="number" id="ord-f-price" min="0"/></div>
+      <div class="mf"><label>Gender</label><select id="ord-f-gender"><option value="F">Female</option><option value="M">Male</option><option value="U">Unisex</option></select></div>
+    </div>
+    <div class="mf"><label>Customer Name</label><input id="ord-f-customer" placeholder="Name"/></div>
+    <div class="mgrid">
+      <div class="mf"><label>Order Date</label><input type="date" id="ord-f-date"/></div>
+      <div class="mf"><label>Status</label>
+        <select id="ord-f-status" onchange="validateOrderFields()">
+          <option value="Pending">Pending</option>
+          <option value="In-Progress">In-Progress</option>
+          <option value="Done">Done</option>
+          <option value="Cancelled">Cancelled</option>
+        </select>
+      </div>
+    </div>
+    <div class="mgrid">
+      <div class="mf"><label>Delivered? <span id="del-lock" style="font-size:10px;color:var(--lgray)">(requires Done)</span></label>
+        <select id="ord-f-delivered" onchange="validateOrderFields()">
+          <option value="No">No</option><option value="Yes">Yes</option>
+        </select>
+      </div>
+      <div class="mf"><label>Paid? <span id="paid-lock" style="font-size:10px;color:var(--lgray)">(requires Done)</span></label>
+        <select id="ord-f-paid" onchange="validateOrderFields(); syncPaymentOnPaid()">
+          <option value="No">No</option><option value="Yes">Yes</option>
+        </select>
+      </div>
+    </div>
+    <div class="mf"><label>Mode of Payment <span id="pay-lock" style="font-size:10px;color:var(--lgray)">(requires Paid = Yes)</span></label>
+      <select id="ord-f-payment" onchange="validateOrderFields()">
+        <option value="N/A">N/A</option><option value="Cash">Cash</option>
+        <option value="Gcash">Gcash</option><option value="Transfer">Transfer</option>
+      </select>
+    </div>
+    <div id="ord-stock-warning" style="display:none;background:#FEE2E2;border-left:3px solid var(--red);padding:10px 14px;font-size:12px;color:var(--red);margin-top:8px"></div>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" onclick="closeModal('orders-modal')">Cancel</button>
+      <button class="modal-btn primary" id="ord-save-btn" onclick="saveOrder()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="purchases-modal">
+  <div class="modal-box">
+    <div class="modal-title" id="pur-modal-title">Add Purchase</div>
+    <div class="mf"><label>Batch</label><select id="pur-f-batch"></select></div>
+    <div class="mf"><label>Item Name</label><input id="pur-f-item" placeholder="e.g. Shapi - Alcohol"/></div>
+    <div class="mgrid">
+      <div class="mf"><label>Quantity</label><input type="number" id="pur-f-qty" min="1" value="1" oninput="calcPurTotal()"/></div>
+      <div class="mf"><label>Price per Unit (₱)</label><input type="number" id="pur-f-price" min="0" step="0.01" oninput="calcPurTotal()"/></div>
+    </div>
+    <div class="preview-box"><div class="preview-lbl">Total = Qty × Price</div><span class="preview-val" id="pur-total-preview">—</span></div>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" onclick="closeModal('purchases-modal')">Cancel</button>
+      <button class="modal-btn primary" id="pur-save-btn" onclick="savePurchase()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- BULK RESTOCK MODAL -->
+<div class="modal-overlay" id="bulk-restock-modal">
+  <div class="modal-box" style="max-width:540px">
+    <div class="modal-title">Bulk Restock Fragrance</div>
+    <p style="font-size:13px;color:var(--gray);margin-bottom:16px">Set stock levels for multiple fragrances at once. Leave blank to skip.</p>
+    <div id="bulk-restock-list" style="max-height:320px;overflow-y:auto;border:1px solid var(--line);padding:8px"></div>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" onclick="closeModal('bulk-restock-modal')">Cancel</button>
+      <button class="modal-btn primary" onclick="saveBulkRestock()">Save All</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="batch-modal">
+  <div class="modal-box">
+    <div class="modal-title">Create New Batch</div>
+    <div class="mf"><label>Batch Name</label><input id="batch-f-name" placeholder="e.g. BATCH SIX" onkeydown="if(event.key==='Enter')saveBatch()"/></div>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" onclick="closeModal('batch-modal')">Cancel</button>
+      <button class="modal-btn primary" onclick="saveBatch()">Create</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal-box">
+    <div class="modal-title" id="confirm-title">Are you sure?</div>
+    <div style="font-size:13px;color:var(--gray);line-height:1.7;margin-bottom:20px" id="confirm-body"></div>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" onclick="closeModal('confirm-modal')">Cancel</button>
+      <button class="modal-btn primary" id="confirm-ok" style="background:var(--red);border-color:var(--red)">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── SEED DATA ────────────────────────────────────────────────────────────────
+const SEED_INVENTORY = [{"id": "i001", "batch": "BATCH FOUR", "name": "Afternoon Swim", "oil": 1, "bottles": 1, "remaining": 3, "remarks": "None"}, {"id": "i002", "batch": "BATCH FOUR", "name": "AVENTUS", "oil": 1, "bottles": 1, "remaining": 3, "remarks": ""}, {"id": "i003", "batch": "BATCH ONE", "name": "Baccarat Rouge", "oil": 1, "bottles": 2, "remaining": 0, "remarks": "Personal Oil"}, {"id": "i004", "batch": "BATCH TWO", "name": "Baccarat Rouge", "oil": 1, "bottles": 4, "remaining": 0, "remarks": "None"}, {"id": "i005", "batch": "BATCH FOUR", "name": "Baccarat Rouge", "oil": 1, "bottles": 2, "remaining": 2, "remarks": "None"}, {"id": "i006", "batch": "BATCH THREE", "name": "BDC", "oil": 1, "bottles": 2, "remaining": 0, "remarks": ""}, {"id": "i007", "batch": "BATCH FIVE", "name": "Black Code", "oil": 1, "bottles": 2, "remaining": 2, "remarks": "Special Order"}, {"id": "i008", "batch": "BATCH ONE", "name": "Bvlgari - Amethyst", "oil": 1, "bottles": 4, "remaining": 0, "remarks": "None"}, {"id": "i009", "batch": "BATCH FOUR", "name": "Bvlgari - Amethyst", "oil": 1, "bottles": 4, "remaining": 1, "remarks": "None"}, {"id": "i010", "batch": "BATCH ONE", "name": "Chance Coco", "oil": 1, "bottles": 4, "remaining": 0, "remarks": "None"}, {"id": "i011", "batch": "BATCH ONE", "name": "Christian Dior - Sauvage", "oil": 1, "bottles": 2, "remaining": 0, "remarks": "Personal Oil"}, {"id": "i012", "batch": "BATCH THREE", "name": "Christian Dior - Sauvage", "oil": 1, "bottles": 3, "remaining": 1, "remarks": "None"}, {"id": "i013", "batch": "BATCH TWO", "name": "CK - ONE", "oil": 1, "bottles": 4, "remaining": 0, "remarks": "None"}, {"id": "i014", "batch": "BATCH THREE", "name": "CK - ONE", "oil": 1, "bottles": 2, "remaining": 2, "remarks": "None"}, {"id": "i015", "batch": "BATCH TWO", "name": "CK ETERNITY", "oil": 1, "bottles": 1, "remaining": 1, "remarks": "None"}, {"id": "i016", "batch": "BATCH ONE", "name": "Clinique Happy", "oil": 1, "bottles": 1, "remaining": 1, "remarks": "None"}, {"id": "i017", "batch": "BATCH ONE", "name": "Coco Mademoiselle", "oil": 1, "bottles": 2, "remaining": 2, "remarks": "None"}, {"id": "i018", "batch": "BATCH THREE", "name": "Cool Water - M", "oil": 1, "bottles": 3, "remaining": 1, "remarks": "None"}, {"id": "i019", "batch": "BATCH TWO", "name": "D&G LIGHT BLUE - W", "oil": 1, "bottles": 2, "remaining": 2, "remarks": "None"}, {"id": "i020", "batch": "BATCH FOUR", "name": "Delina", "oil": 1, "bottles": 1, "remaining": 2, "remarks": "None"}, {"id": "i021", "batch": "BATCH ONE", "name": "Imagination", "oil": 1, "bottles": 4, "remaining": 0, "remarks": "None"}, {"id": "i022", "batch": "BATCH FOUR", "name": "Imagination", "oil": 1, "bottles": 1, "remaining": 3, "remarks": "None"}, {"id": "i023", "batch": "BATCH TWO", "name": "INCANTO SHINE", "oil": 1, "bottles": 3, "remaining": 1, "remarks": "None"}, {"id": "i024", "batch": "BATCH ONE", "name": "Issey Miyake - Eau de Issey", "oil": 1, "bottles": 3, "remaining": 1, "remarks": "Remaining Oil is not enough"}, {"id": "i025", "batch": "BATCH ONE", "name": "Lacoste 12.12 Blanc (White)", "oil": 1, "bottles": 4, "remaining": 0, "remarks": "None"}, {"id": "i026", "batch": "BATCH THREE", "name": "Lacoste 12.12 Blanc (White)", "oil": 1, "bottles": 1, "remaining": 3, "remarks": "-2 IN TOTAL"}, {"id": "i027", "batch": "BATCH ONE", "name": "Lanvin - Eclat d'Arpege", "oil": 1, "bottles": 4, "remaining": 0, "remarks": "None"}, {"id": "i028", "batch": "BATCH TWO", "name": "Lanvin - Eclat d'Arpege", "oil": 1, "bottles": 4, "remaining": 0, "remarks": "None"}, {"id": "i029", "batch": "BATCH FOUR", "name": "Lanvin - Eclat d'Arpege", "oil": 1, "bottles": 3, "remaining": 2, "remarks": "Possible more than 1"}, {"id": "i030", "batch": "BATCH FOUR", "name": "Le Male", "oil": 1, "bottles": 1, "remaining": 3, "remarks": "None"}, {"id": "i031", "batch": "BATCH ONE", "name": "Libre YSL Men", "oil": 1, "bottles": 4, "remaining": 0, "remarks": "None"}, {"id": "i032", "batch": "BATCH THREE", "name": "Libre YSL Men", "oil": 1, "bottles": 1, "remaining": 0, "remarks": "Personal Oil"}, {"id": "i033", "batch": "BATCH FOUR", "name": "Libre YSL Men", "oil": 1, "bottles": 3, "remaining": 1, "remarks": "None"}, {"id": "i034", "batch": "BATCH ONE", "name": "Libre YSL Women", "oil": 1, "bottles": 2, "remaining": 2, "remarks": "None"}, {"id": "i035", "batch": "BATCH FOUR", "name": "Light Blue - M", "oil": 1, "bottles": 1, "remaining": 3, "remarks": "None"}, {"id": "i036", "batch": "BATCH ONE", "name": "Miss Dior", "oil": 1, "bottles": 4, "remaining": 0, "remarks": "None"}, {"id": "i037", "batch": "BATCH TWO", "name": "Miss Dior", "oil": 1, "bottles": 4, "remaining": 0, "remarks": "None"}, {"id": "i038", "batch": "BATCH FOUR", "name": "Miss Dior", "oil": 1, "bottles": 3, "remaining": 1, "remarks": "None"}, {"id": "i039", "batch": "BATCH FIVE", "name": "Miss Dior", "oil": 1, "bottles": 0, "remaining": 4, "remarks": ""}, {"id": "i040", "batch": "BATCH ONE", "name": "Omnia Crystalline", "oil": 1, "bottles": 4, "remaining": 0, "remarks": "None"}, {"id": "i041", "batch": "BATCH FOUR", "name": "Omnia Crystalline", "oil": 1, "bottles": 2, "remaining": 2, "remarks": "None"}, {"id": "i042", "batch": "BATCH FOUR", "name": "Red 12.12", "oil": 1, "bottles": 1, "remaining": 3, "remarks": "None"}, {"id": "i043", "batch": "BATCH FOUR", "name": "Sage and Seasalt", "oil": 1, "bottles": 1, "remaining": 3, "remarks": "None"}, {"id": "i044", "batch": "BATCH ONE", "name": "Santal 33", "oil": 1, "bottles": 2, "remaining": 2, "remarks": "None"}, {"id": "i045", "batch": "BATCH TWO", "name": "SAUVAGE ELIXIR", "oil": 1, "bottles": 2, "remaining": 2, "remarks": "None"}, {"id": "i046", "batch": "BATCH ONE", "name": "Stronger with You", "oil": 1, "bottles": 2, "remaining": 2, "remarks": "None"}, {"id": "i047", "batch": "BATCH ONE", "name": "Valaya", "oil": 1, "bottles": 4, "remaining": 0, "remarks": "None"}, {"id": "i048", "batch": "BATCH TWO", "name": "Valaya", "oil": 1, "bottles": 4, "remaining": 0, "remarks": "None"}, {"id": "i049", "batch": "BATCH THREE", "name": "Valaya", "oil": 1, "bottles": 4, "remaining": 0, "remarks": "None"}, {"id": "i050", "batch": "BATCH THREE", "name": "Valaya", "oil": 1, "bottles": 4, "remaining": 1, "remarks": "None"}, {"id": "i051", "batch": "BATCH FOUR", "name": "Valaya", "oil": 1, "bottles": 0, "remaining": 4, "remarks": "None"}, {"id": "i052", "batch": "BATCH FIVE", "name": "Valaya", "oil": 1, "bottles": 0, "remaining": 4, "remarks": ""}, {"id": "i053", "batch": "BATCH ONE", "name": "Vanilla and Anise", "oil": 1, "bottles": 4, "remaining": 0, "remarks": "None"}, {"id": "i054", "batch": "BATCH ONE", "name": "Versace - Eros", "oil": 1, "bottles": 4, "remaining": 0, "remarks": "None"}, {"id": "i055", "batch": "BATCH THREE", "name": "Versace - Eros", "oil": 1, "bottles": 4, "remaining": 0, "remarks": "None"}, {"id": "i056", "batch": "BATCH FOUR", "name": "Versace - Eros", "oil": 1, "bottles": 2, "remaining": 1, "remarks": "None"}, {"id": "i057", "batch": "BATCH FIVE", "name": "Versace - Eros", "oil": 1, "bottles": 0, "remaining": 4, "remarks": ""}, {"id": "i058", "batch": "BATCH ONE", "name": "VS Bombshell", "oil": 2, "bottles": 8, "remaining": 0, "remarks": "None"}, {"id": "i059", "batch": "BATCH THREE", "name": "VS Bombshell (120ml)", "oil": 1, "bottles": 8, "remaining": 11, "remarks": "None"}, {"id": "i060", "batch": "BATCH TWO", "name": "Y EDP", "oil": 1, "bottles": 2, "remaining": 0, "remarks": "None"}];
+const SEED_ORDERS = [{"id": "o001", "num": 1, "name": "Baccarat Rouge", "price": 350, "customer": "Arnold", "gender": "M", "date": "2026-05-15", "status": "Done", "batch": "BATCH TWO", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o002", "num": 2, "name": "Baccarat Rouge", "price": 350, "customer": "Ate Isay", "gender": "F", "date": "2026-05-12", "status": "Done", "batch": "BATCH ONE", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o003", "num": 3, "name": "Baccarat Rouge", "price": 350, "customer": "Laurence Quiboloy", "gender": "F", "date": "2026-05-26", "status": "Done", "batch": "BATCH TWO", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o004", "num": 4, "name": "Baccarat Rouge", "price": 350, "customer": "Osh", "gender": "F", "date": "2026-05-15", "status": "Done", "batch": "BATCH TWO", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o005", "num": 5, "name": "Bvlgari - Amethyst", "price": 350, "customer": "Agnes Rozul", "gender": "F", "date": "2026-05-16", "status": "Done", "batch": "BATCH TWO", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o006", "num": 6, "name": "Bvlgari - Amethyst", "price": 350, "customer": "Tita Maybill", "gender": "F", "date": "2026-05-13", "status": "Done", "batch": "BATCH ONE", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o007", "num": 7, "name": "Bvlgari - Amethyst", "price": 350, "customer": "Camille", "gender": "M", "date": "2026-05-15", "status": "Done", "batch": "BATCH TWO", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o008", "num": 8, "name": "Bvlgari - Amethyst", "price": 350, "customer": "Sir Anthony", "gender": "F", "date": "2026-05-20", "status": "Done", "batch": "BATCH TWO", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o009", "num": 9, "name": "Cal One", "price": 300, "customer": "Kuya Joel", "gender": "M", "date": "2026-05-18", "status": "Done", "batch": "BATCH TWO", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o010", "num": 10, "name": "Cal One", "price": 300, "customer": "Mam Jeanette", "gender": "M", "date": "2026-05-15", "status": "Done", "batch": "BATCH TWO", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o011", "num": 11, "name": "Cal One", "price": 300, "customer": "Randy", "gender": "M", "date": "2026-05-15", "status": "Done", "batch": "BATCH TWO", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o012", "num": 12, "name": "Cal One", "price": 300, "customer": "Mhara", "gender": "M", "date": "2026-05-15", "status": "Done", "batch": "BATCH TWO", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o013", "num": 13, "name": "Chance Coco", "price": 350, "customer": "Cai", "gender": "F", "date": "2026-05-12", "status": "Done", "batch": "BATCH ONE", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o014", "num": 14, "name": "Chance Coco", "price": 350, "customer": "Tita Jing", "gender": "F", "date": "2026-05-12", "status": "Done", "batch": "BATCH ONE", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o015", "num": 15, "name": "Chance Coco", "price": 350, "customer": "Mhara", "gender": "F", "date": "2026-05-15", "status": "Done", "batch": "BATCH TWO", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o016", "num": 16, "name": "Christian Dior - Sauvage", "price": 350, "customer": "Camille", "gender": "M", "date": "2026-05-15", "status": "Done", "batch": "BATCH TWO", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o017", "num": 17, "name": "Christian Dior - Sauvage", "price": 350, "customer": "Kim", "gender": "M", "date": "2026-05-13", "status": "Done", "batch": "BATCH ONE", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o018", "num": 18, "name": "CK Eternity - M", "price": 350, "customer": "Laurence Quiboloy", "gender": "M", "date": "2026-05-14", "status": "Done", "batch": "BATCH TWO", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o019", "num": 19, "name": "Clinique Happy", "price": 300, "customer": "Liam", "gender": "M", "date": "2026-05-13", "status": "Done", "batch": "BATCH ONE", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o020", "num": 20, "name": "Coco Mademoiselle", "price": 350, "customer": "Cai", "gender": "F", "date": "2026-05-12", "status": "Done", "batch": "BATCH ONE", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o021", "num": 30, "name": "Imagination", "price": 350, "customer": "George", "gender": "M", "date": "2026-05-12", "status": "Done", "batch": "BATCH ONE", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o022", "num": 31, "name": "Imagination", "price": 350, "customer": "Tito Dodie", "gender": "M", "date": "2026-05-12", "status": "Done", "batch": "BATCH ONE", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o023", "num": 70, "name": "VS Bombshell", "price": 325, "customer": "Ate Tonet (TMC)", "gender": "F", "date": "2026-05-13", "status": "Done", "batch": "BATCH ONE", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o024", "num": 75, "name": "VS Bombshell", "price": 325, "customer": "Yana", "gender": "F", "date": "2026-05-12", "status": "Done", "batch": "BATCH ONE", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o025", "num": 76, "name": "VS Bombshell", "price": 325, "customer": "Yana", "gender": "F", "date": "2026-05-12", "status": "Done", "batch": "BATCH ONE", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o026", "num": 78, "name": "Blanc - White", "price": 350, "customer": "Rodel Bigas", "gender": "M", "date": "2026-06-01", "status": "Done", "batch": "BATCH THREE", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o027", "num": 79, "name": "Eros", "price": 325, "customer": "Benedict Bigas", "gender": "M", "date": "2026-06-01", "status": "Done", "batch": "BATCH THREE", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o028", "num": 80, "name": "Sauvage", "price": 350, "customer": "Chona Bangus", "gender": "M", "date": "2026-06-01", "status": "Done", "batch": "BATCH THREE", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o029", "num": 81, "name": "Valaya", "price": 350, "customer": "Junel Bigas", "gender": "M", "date": "2026-06-01", "status": "Done", "batch": "BATCH THREE", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o030", "num": 82, "name": "VS Bombshell", "price": 325, "customer": "Jelly Cream Dory", "gender": "F", "date": "2026-06-01", "status": "Done", "batch": "BATCH THREE", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o031", "num": 101, "name": "Miss Dior", "price": 375, "customer": "Ate Len", "gender": "F", "date": "2026-06-02", "status": "Done", "batch": "BATCH THREE", "delivered": "Yes", "paid": "Yes", "payment": "Gcash"}, {"id": "o032", "num": 102, "name": "Valaya", "price": 375, "customer": "Ate Len", "gender": "F", "date": "2026-06-02", "status": "Done", "batch": "BATCH THREE", "delivered": "Yes", "paid": "Yes", "payment": "Gcash"}, {"id": "o033", "num": 111, "name": "BDC", "price": 350, "customer": "Gab", "gender": "M", "date": "2026-06-09", "status": "Done", "batch": "BATCH THREE", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o034", "num": 114, "name": "Baccarat Rouge", "price": 375, "customer": "Wency", "gender": "M", "date": "2026-06-10", "status": "Done", "batch": "BATCH FOUR", "delivered": "Yes", "paid": "No", "payment": "N/A"}, {"id": "o035", "num": 115, "name": "Cool - M", "price": 325, "customer": "Jugo", "gender": "M", "date": "2026-06-11", "status": "Done", "batch": "BATCH FOUR", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o036", "num": 116, "name": "Light Blue - M", "price": 350, "customer": "Anel", "gender": "M", "date": "2026-06-11", "status": "Done", "batch": "BATCH FOUR", "delivered": "Yes", "paid": "Yes", "payment": "Gcash"}, {"id": "o037", "num": 117, "name": "Light Blue - W", "price": 350, "customer": "Anel", "gender": "F", "date": "2026-06-11", "status": "Done", "batch": "BATCH FOUR", "delivered": "Yes", "paid": "Yes", "payment": "Gcash"}, {"id": "o038", "num": 118, "name": "Libre - W", "price": 350, "customer": "Meday", "gender": "F", "date": "2026-06-12", "status": "Done", "batch": "BATCH FOUR", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o039", "num": 119, "name": "Miss Dior", "price": 375, "customer": "Ate Carla", "gender": "F", "date": "2026-06-12", "status": "Done", "batch": "BATCH FOUR", "delivered": "Yes", "paid": "Yes", "payment": "Gcash"}, {"id": "o040", "num": 120, "name": "Valaya", "price": 375, "customer": "Ate Fruits", "gender": "M", "date": "2026-06-12", "status": "Done", "batch": "BATCH FOUR", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o041", "num": 122, "name": "Afternoon Swim", "price": 325, "customer": "Ate Jame", "gender": "F", "date": "2026-06-13", "status": "Done", "batch": "BATCH FOUR", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o042", "num": 123, "name": "Delina", "price": 375, "customer": "Tita Joyce", "gender": "F", "date": "2026-06-13", "status": "Done", "batch": "BATCH FOUR", "delivered": "Yes", "paid": "Yes", "payment": "Gcash"}, {"id": "o043", "num": 124, "name": "Imagination", "price": 375, "customer": "Enad", "gender": "M", "date": "2026-06-13", "status": "Done", "batch": "BATCH FOUR", "delivered": "Yes", "paid": "Yes", "payment": "Gcash"}, {"id": "o044", "num": 125, "name": "Libre - M", "price": 375, "customer": "Ate Jame", "gender": "F", "date": "2026-06-13", "status": "Done", "batch": "BATCH FOUR", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o045", "num": 126, "name": "O.Crystalline", "price": 375, "customer": "Loida Patricia", "gender": "F", "date": "2026-06-13", "status": "Done", "batch": "BATCH FOUR", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o046", "num": 127, "name": "O.Crystalline", "price": 375, "customer": "May Patricia", "gender": "F", "date": "2026-06-13", "status": "Done", "batch": "BATCH FOUR", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o047", "num": 128, "name": "Red 12.12", "price": 325, "customer": "Enad", "gender": "M", "date": "2026-06-13", "status": "Done", "batch": "BATCH FOUR", "delivered": "Yes", "paid": "Yes", "payment": "Gcash"}, {"id": "o048", "num": 129, "name": "Sage and Seasalt", "price": 325, "customer": "Ate Jame", "gender": "F", "date": "2026-06-13", "status": "Done", "batch": "BATCH FOUR", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o049", "num": 130, "name": "Vanilla Anise", "price": 375, "customer": "Ate Jame", "gender": "F", "date": "2026-06-13", "status": "Done", "batch": "BATCH FOUR", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o050", "num": 131, "name": "Amethyst", "price": 375, "customer": "Ms. Ally SAS", "gender": "F", "date": "2026-06-15", "status": "Done", "batch": "BATCH FOUR", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o051", "num": 132, "name": "Amethyst", "price": 375, "customer": "Ms. Roz SAS", "gender": "F", "date": "2026-06-15", "status": "Done", "batch": "BATCH FOUR", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o052", "num": 133, "name": "Bombshell", "price": 350, "customer": "Tita Jing", "gender": "F", "date": "2026-06-15", "status": "Done", "batch": "BATCH FOUR", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o053", "num": 134, "name": "Bombshell", "price": 350, "customer": "Tita Jing", "gender": "F", "date": "2026-06-15", "status": "Done", "batch": "BATCH FOUR", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o054", "num": 135, "name": "CA - One", "price": 325, "customer": "Ekob", "gender": "M", "date": "2026-06-15", "status": "Done", "batch": "BATCH FOUR", "delivered": "Yes", "paid": "Yes", "payment": "Gcash"}, {"id": "o055", "num": 136, "name": "Eclat", "price": 350, "customer": "Ms. Cha SAS", "gender": "F", "date": "2026-06-15", "status": "Done", "batch": "BATCH FOUR", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o056", "num": 137, "name": "Eclat", "price": 350, "customer": "Ms. Mia SAS", "gender": "F", "date": "2026-06-15", "status": "Done", "batch": "BATCH FOUR", "delivered": "Yes", "paid": "Yes", "payment": "Gcash"}, {"id": "o057", "num": 138, "name": "Eros", "price": 350, "customer": "Alfred", "gender": "M", "date": "2026-06-15", "status": "Done", "batch": "BATCH FOUR", "delivered": "Yes", "paid": "Yes", "payment": "Gcash"}, {"id": "o058", "num": 139, "name": "Eros", "price": 350, "customer": "Ms. Cha SAS", "gender": "F", "date": "2026-06-15", "status": "Done", "batch": "BATCH FOUR", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o059", "num": 140, "name": "Eros", "price": 350, "customer": "Sir Ayan SAS", "gender": "M", "date": "2026-06-15", "status": "Done", "batch": "BATCH FOUR", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o060", "num": 141, "name": "Imagination", "price": 375, "customer": "Ekob", "gender": "M", "date": "2026-06-15", "status": "Done", "batch": "BATCH FOUR", "delivered": "Yes", "paid": "Yes", "payment": "Gcash"}, {"id": "o061", "num": 142, "name": "Libre - M", "price": 375, "customer": "Tito Ian", "gender": "M", "date": "2026-06-15", "status": "Done", "batch": "BATCH FOUR", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o062", "num": 143, "name": "Miss Dior", "price": 375, "customer": "Aileen", "gender": "F", "date": "2026-06-15", "status": "Done", "batch": "BATCH FOUR", "delivered": "Yes", "paid": "Yes", "payment": "Gcash"}, {"id": "o063", "num": 144, "name": "Valaya", "price": 375, "customer": "Aileen", "gender": "F", "date": "2026-06-15", "status": "Done", "batch": "BATCH FOUR", "delivered": "Yes", "paid": "Yes", "payment": "Gcash"}, {"id": "o064", "num": 145, "name": "Baccarat Rouge", "price": 375, "customer": "Order tita Roda", "gender": "M", "date": "2026-06-15", "status": "Done", "batch": "BATCH FOUR", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o065", "num": 146, "name": "Amethyst", "price": 375, "customer": "Ate (GF Kuya Allan)", "gender": "F", "date": "2026-06-20", "status": "Done", "batch": "BATCH FOUR", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o066", "num": 147, "name": "Aventus", "price": 375, "customer": "Kuya Allan", "gender": "M", "date": "2026-06-20", "status": "Done", "batch": "BATCH FOUR", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o067", "num": 148, "name": "Elixir Savage", "price": 300, "customer": "Kuya Allan", "gender": "M", "date": "2026-06-20", "status": "Done", "batch": "BATCH FOUR", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o068", "num": 149, "name": "Incanto Shine", "price": 300, "customer": "Ate (GF Kuya Allan)", "gender": "F", "date": "2026-06-20", "status": "Done", "batch": "BATCH FOUR", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o069", "num": 150, "name": "Baccarat Rouge", "price": 375, "customer": "Ate Mhay", "gender": "F", "date": "2026-06-29", "status": "Done", "batch": "BATCH FIVE", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o070", "num": 151, "name": "Eros", "price": 350, "customer": "Ate Mhay", "gender": "F", "date": "2026-06-29", "status": "Done", "batch": "BATCH FIVE", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o071", "num": 152, "name": "Libre - M", "price": 375, "customer": "Ate Mhay", "gender": "F", "date": "2026-06-29", "status": "Done", "batch": "BATCH FIVE", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o072", "num": 153, "name": "Valaya", "price": 375, "customer": "Lorna Konsi", "gender": "F", "date": "2026-06-29", "status": "Done", "batch": "BATCH FIVE", "delivered": "No", "paid": "No", "payment": "N/A"}, {"id": "o073", "num": 154, "name": "Amethyst", "price": 375, "customer": "Ms. Lorry", "gender": "F", "date": "2026-06-29", "status": "Done", "batch": "BATCH FIVE", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o074", "num": 155, "name": "Miss Dior", "price": 375, "customer": "Ms. Lorry", "gender": "F", "date": "2026-06-29", "status": "Done", "batch": "BATCH FIVE", "delivered": "Yes", "paid": "Yes", "payment": "Cash"}, {"id": "o075", "num": 156, "name": "Eclat", "price": 350, "customer": "Ms. Nica", "gender": "F", "date": "2026-06-29", "status": "Done", "batch": "BATCH FIVE", "delivered": "No", "paid": "No", "payment": "N/A"}, {"id": "o076", "num": 157, "name": "Black Code", "price": 375, "customer": "Joan Ar", "gender": "M", "date": "2026-07-03", "status": "Done", "batch": "BATCH FIVE", "delivered": "Yes", "paid": "Yes", "payment": "Gcash"}, {"id": "o077", "num": 158, "name": "Black Code", "price": 375, "customer": "Joan Ar", "gender": "M", "date": "2026-07-03", "status": "Done", "batch": "BATCH FIVE", "delivered": "Yes", "paid": "Yes", "payment": "Gcash"}, {"id": "o078", "num": 159, "name": "Eclat", "price": 350, "customer": "Jana", "gender": "F", "date": "2026-07-07", "status": "In-Progress", "batch": "BATCH FIVE", "delivered": "No", "paid": "No", "payment": "N/A"}, {"id": "o079", "num": 160, "name": "Happy - W", "price": 325, "customer": "Mia", "gender": "F", "date": "2026-07-06", "status": "In-Progress", "batch": "BATCH FIVE", "delivered": "No", "paid": "No", "payment": "N/A"}, {"id": "o080", "num": 161, "name": "Miss Dior", "price": 375, "customer": "Jewel", "gender": "F", "date": "2026-07-07", "status": "In-Progress", "batch": "BATCH FIVE", "delivered": "No", "paid": "No", "payment": "N/A"}, {"id": "o081", "num": 162, "name": "Ultra Male", "price": 375, "customer": "Jaja", "gender": "M", "date": "2026-07-07", "status": "In-Progress", "batch": "BATCH FIVE", "delivered": "No", "paid": "No", "payment": "N/A"}, {"id": "o082", "num": 163, "name": "Miss Dior", "price": 375, "customer": "Nanay Merly", "gender": "F", "date": "2026-07-07", "status": "In-Progress", "batch": "BATCH FIVE", "delivered": "No", "paid": "No", "payment": "N/A"}];
+const SEED_PURCHASES = [{"id": "p001", "batch": "BATCH ONE", "item": "NBS - STICKER PAPER", "qty": 1, "price": 69, "total": 69}, {"id": "p002", "batch": "BATCH ONE", "item": "Shapi - SHREDDED PAPER", "qty": 1, "price": 183.12, "total": 183.12}, {"id": "p003", "batch": "BATCH ONE", "item": "Shapi - Funnel", "qty": 1, "price": 79.12, "total": 79.12}, {"id": "p004", "batch": "BATCH ONE", "item": "Shapi - Dropper", "qty": 1, "price": 99.11, "total": 99.11}, {"id": "p005", "batch": "BATCH ONE", "item": "Shapi - BOX FOR MEN AND WOMEN", "qty": 1, "price": 163.12, "total": 163.12}, {"id": "p006", "batch": "BATCH ONE", "item": "Shapi - Beaker", "qty": 1, "price": 292.25, "total": 292.25}, {"id": "p007", "batch": "BATCH ONE", "item": "Shapi - Alchohol", "qty": 1, "price": 243.21, "total": 243.21}, {"id": "p008", "batch": "BATCH ONE", "item": "Shapi - BOX", "qty": 1, "price": 214.25, "total": 214.25}, {"id": "p009", "batch": "BATCH ONE", "item": "Glass bottle 70ml - 12pcs", "qty": 84, "price": 43.96, "total": 3692.64}, {"id": "p010", "batch": "BATCH ONE", "item": "VS Bombshell Oil", "qty": 2, "price": 168, "total": 336}, {"id": "p011", "batch": "BATCH ONE", "item": "Vanilla and Anise Oil", "qty": 1, "price": 240, "total": 240}, {"id": "p012", "batch": "BATCH ONE", "item": "Valaya Oil", "qty": 1, "price": 220, "total": 220}, {"id": "p013", "batch": "BATCH ONE", "item": "Santal 33 Oil", "qty": 1, "price": 319, "total": 319}, {"id": "p014", "batch": "BATCH ONE", "item": "Omnia Crystalline Oil", "qty": 1, "price": 220, "total": 220}, {"id": "p015", "batch": "BATCH ONE", "item": "Miss Dior Oil", "qty": 1, "price": 240, "total": 240}, {"id": "p016", "batch": "BATCH ONE", "item": "Libre YSL Women Oil", "qty": 1, "price": 200, "total": 200}, {"id": "p017", "batch": "BATCH ONE", "item": "Libre YSL Men Oil", "qty": 1, "price": 240, "total": 240}, {"id": "p018", "batch": "BATCH ONE", "item": "Lacoste 12.12 Blanc Oil", "qty": 1, "price": 220, "total": 220}, {"id": "p019", "batch": "BATCH ONE", "item": "Imagination Oil", "qty": 1, "price": 240, "total": 240}, {"id": "p020", "batch": "BATCH ONE", "item": "Coco Mademoiselle Oil", "qty": 1, "price": 220, "total": 220}, {"id": "p021", "batch": "BATCH ONE", "item": "Clinique Happy Oil", "qty": 1, "price": 200, "total": 200}, {"id": "p022", "batch": "BATCH ONE", "item": "Chance Coco Oil", "qty": 1, "price": 240, "total": 240}, {"id": "p023", "batch": "BATCH ONE", "item": "Bvlgari - Amethyst Oil", "qty": 1, "price": 260, "total": 260}, {"id": "p024", "batch": "BATCH ONE", "item": "Versace - Eros Oil", "qty": 1, "price": 168, "total": 168}, {"id": "p025", "batch": "BATCH ONE", "item": "Issey Miyake Oil", "qty": 1, "price": 200, "total": 200}, {"id": "p026", "batch": "BATCH ONE", "item": "Lanvin - Eclat Oil", "qty": 1, "price": 200, "total": 200}, {"id": "p027", "batch": "BATCH ONE", "item": "Stronger with You Oil", "qty": 1, "price": 168, "total": 168}, {"id": "p028", "batch": "BATCH ONE", "item": "Glass pump", "qty": 24, "price": 8.68, "total": 208.32}, {"id": "p029", "batch": "BATCH TWO", "item": "NBS - STICKER PAPER", "qty": 1, "price": 113, "total": 113}, {"id": "p030", "batch": "BATCH TWO", "item": "Shapi - Alchohol 3pcs", "qty": 1, "price": 729.39, "total": 729.39}, {"id": "p031", "batch": "BATCH TWO", "item": "Shapi - BOX", "qty": 1, "price": 144.08, "total": 144.08}, {"id": "p032", "batch": "BATCH TWO", "item": "LV Bottle 50ml", "qty": 12, "price": 38.08, "total": 456.96}, {"id": "p033", "batch": "BATCH TWO", "item": "CK ETERNITY Oil", "qty": 1, "price": 200, "total": 200}, {"id": "p034", "batch": "BATCH TWO", "item": "Baccarat Rouge Oil", "qty": 1, "price": 200, "total": 200}, {"id": "p035", "batch": "BATCH TWO", "item": "CK ONE Oil", "qty": 1, "price": 220, "total": 220}, {"id": "p036", "batch": "BATCH TWO", "item": "Lanvin - Eclat Oil", "qty": 1, "price": 200, "total": 200}, {"id": "p037", "batch": "BATCH TWO", "item": "D&G Light Blue W Oil", "qty": 1, "price": 200, "total": 200}, {"id": "p038", "batch": "BATCH TWO", "item": "Sauvage Elixir Oil", "qty": 1, "price": 200, "total": 200}, {"id": "p039", "batch": "BATCH TWO", "item": "Incanto Shine Oil", "qty": 1, "price": 168, "total": 168}, {"id": "p040", "batch": "BATCH TWO", "item": "Miss Dior Oil", "qty": 1, "price": 240, "total": 240}, {"id": "p041", "batch": "BATCH TWO", "item": "Valaya Oil", "qty": 1, "price": 224, "total": 224}, {"id": "p042", "batch": "BATCH TWO", "item": "Y EDP Oil", "qty": 1, "price": 200, "total": 200}, {"id": "p043", "batch": "BATCH TWO", "item": "Fixative", "qty": 1, "price": 527.8, "total": 527.8}, {"id": "p044", "batch": "BATCH THREE", "item": "LV Bottle 50ml", "qty": 36, "price": 38.08, "total": 1370.88}, {"id": "p045", "batch": "BATCH THREE", "item": "Blanc - White Oil", "qty": 1, "price": 220, "total": 220}, {"id": "p046", "batch": "BATCH THREE", "item": "CK - ONE Oil", "qty": 1, "price": 220, "total": 220}, {"id": "p047", "batch": "BATCH THREE", "item": "Eros Oil", "qty": 1, "price": 168, "total": 168}, {"id": "p048", "batch": "BATCH THREE", "item": "Sauvage Oil", "qty": 1, "price": 200, "total": 200}, {"id": "p049", "batch": "BATCH THREE", "item": "Valaya Oil", "qty": 1, "price": 224, "total": 224}, {"id": "p050", "batch": "BATCH THREE", "item": "Cool Water M Oil", "qty": 1, "price": 168, "total": 168}, {"id": "p051", "batch": "BATCH THREE", "item": "VS BombShell Oil", "qty": 1, "price": 568.75, "total": 568.75}, {"id": "p052", "batch": "BATCH THREE", "item": "SHAPI - BOX", "qty": 1, "price": 109.17, "total": 109.17}, {"id": "p053", "batch": "BATCH THREE", "item": "SHAPI - Alchohol", "qty": 1, "price": 486.49, "total": 486.49}, {"id": "p054", "batch": "BATCH THREE", "item": "LAZADA - BOX", "qty": 1, "price": 715, "total": 715}, {"id": "p055", "batch": "BATCH THREE", "item": "SHAPI - TESTERS", "qty": 1, "price": 219, "total": 219}, {"id": "p056", "batch": "BATCH FOUR", "item": "Shapi - Alchohol", "qty": 3, "price": 255, "total": 765}, {"id": "p057", "batch": "BATCH FOUR", "item": "MG - PERFUME OILS & TESTERS", "qty": 1, "price": 3120, "total": 3120}, {"id": "p058", "batch": "BATCH FOUR", "item": "Shapi - Box", "qty": 1, "price": 540, "total": 540}, {"id": "p059", "batch": "BATCH FOUR", "item": "GRASSE - LV - Bottles", "qty": 1, "price": 1660, "total": 1660}, {"id": "p060", "batch": "BATCH FOUR", "item": "NBS - Sticker Paper", "qty": 1, "price": 428, "total": 428}, {"id": "p061", "batch": "BATCH FIVE", "item": "Aventus Oil", "qty": 1, "price": 252, "total": 252}, {"id": "p062", "batch": "BATCH FIVE", "item": "Miss Dior Oil", "qty": 1, "price": 180, "total": 180}, {"id": "p063", "batch": "BATCH FIVE", "item": "Valaya Oil", "qty": 1, "price": 180, "total": 180}, {"id": "p064", "batch": "BATCH FIVE", "item": "Versace - Eros Oil", "qty": 1, "price": 180, "total": 180}, {"id": "p065", "batch": "BATCH FIVE", "item": "Armani Black Code Oil", "qty": 1, "price": 180, "total": 180}];
+const SEED_BATCHES = ["BATCH ONE","BATCH TWO","BATCH THREE","BATCH FOUR","BATCH FIVE","BATCH SIX"];
+
+const SEED_CATALOGUE = [
+  {id:"c01",grade:"Everyday",gender:"Male",name:"Dylan Blue",inspired:"Versace - Dylan Blue",price:325,supplier:"GRASSE",status:"Active"},
+  {id:"c02",grade:"Everyday",gender:"Male",name:"Red 12.12",inspired:"Lacoste - Red 12.12",price:325,supplier:"GRASSE",status:"Active"},
+  {id:"c03",grade:"Everyday",gender:"Male",name:"Happy - M",inspired:"Clinique - Happy Men",price:325,supplier:"GRASSE",status:"Active"},
+  {id:"c04",grade:"Everyday",gender:"Male",name:"Cool - M",inspired:"Davidoff - Cool Water Men",price:325,supplier:"GRASSE",status:"Active"},
+  {id:"c05",grade:"Everyday",gender:"Female",name:"Cool - W",inspired:"Davidoff - Cool Water Women",price:325,supplier:"GRASSE",status:"Active"},
+  {id:"c06",grade:"Everyday",gender:"Female",name:"Happy - W",inspired:"Clinique - Happy Women",price:325,supplier:"GRASSE",status:"Active"},
+  {id:"c07",grade:"Everyday",gender:"Unisex",name:"CA - ONE",inspired:"Calvin Klein - CK ONE",price:325,supplier:"GRASSE",status:"Active"},
+  {id:"c08",grade:"Everyday",gender:"Unisex",name:"Afternoon Swim",inspired:"LV - Afternoon Swim",price:325,supplier:"GRASSE",status:"Active"},
+  {id:"c09",grade:"Premium",gender:"Male",name:"BDC",inspired:"Chanel - Bleu de Chanel",price:350,supplier:"GRASSE",status:"Active"},
+  {id:"c10",grade:"Premium",gender:"Male",name:"Versace - Eros",inspired:"Versace - Eros",price:350,supplier:"GRASSE",status:"Active"},
+  {id:"c11",grade:"Premium",gender:"Male",name:"Invictuz",inspired:"Paco Rabanne - Invictus",price:350,supplier:"GRASSE",status:"Active"},
+  {id:"c12",grade:"Premium",gender:"Male",name:"Light Blue - M",inspired:"D&G Light Blue Men",price:350,supplier:"GRASSE",status:"Active"},
+  {id:"c13",grade:"Premium",gender:"Male",name:"Le Male",inspired:"JPG - Le Male",price:350,supplier:"MG",status:"Active"},
+  {id:"c14",grade:"Premium",gender:"Female",name:"Libre - W",inspired:"YSL - Libre Women",price:350,supplier:"GRASSE",status:"Active"},
+  {id:"c15",grade:"Premium",gender:"Female",name:"Lanvin - Eclat",inspired:"Lanvin - Eclat d Arpege",price:350,supplier:"GRASSE",status:"Active"},
+  {id:"c16",grade:"Premium",gender:"Female",name:"VS Bombshell",inspired:"Victoria Secret - Bombshell",price:350,supplier:"GRASSE",status:"Active"},
+  {id:"c17",grade:"Premium",gender:"Female",name:"Light Blue - W",inspired:"D&G Light Blue Women",price:350,supplier:"GRASSE",status:"Active"},
+  {id:"c18",grade:"Premium",gender:"Female",name:"Miss Dior",inspired:"Dior - Miss Dior Blooming",price:350,supplier:"GRASSE",status:"Active"},
+  {id:"c19",grade:"Luxury",gender:"Male",name:"Aventus",inspired:"Creed - Aventus",price:375,supplier:"GRASSE",status:"Active"},
+  {id:"c20",grade:"Luxury",gender:"Male",name:"Imagination",inspired:"LV - Imagination",price:375,supplier:"GRASSE",status:"Active"},
+  {id:"c21",grade:"Luxury",gender:"Male",name:"Libre - M",inspired:"YSL - L Homme Libre",price:375,supplier:"GRASSE",status:"Active"},
+  {id:"c22",grade:"Luxury",gender:"Male",name:"Christian Dior - Sauvage",inspired:"Dior - Sauvage",price:375,supplier:"GRASSE",status:"Active"},
+  {id:"c23",grade:"Luxury",gender:"Male",name:"Ultra Male",inspired:"JPG - Ultra Male",price:375,supplier:"MG",status:"Active"},
+  {id:"c24",grade:"Luxury",gender:"Male",name:"Black Code",inspired:"Giorgio Armani - Black Code",price:375,supplier:"MG",status:"Active"},
+  {id:"c25",grade:"Luxury",gender:"Female",name:"Delina",inspired:"Parfums de Marly - Delina",price:375,supplier:"MG",status:"Active"},
+  {id:"c26",grade:"Luxury",gender:"Female",name:"Bvlgari - Amethyst",inspired:"Bvlgari - Amethyst",price:375,supplier:"GRASSE",status:"Active"},
+  {id:"c27",grade:"Luxury",gender:"Female",name:"Valaya",inspired:"Parfums de Marly - Valaya",price:375,supplier:"GRASSE",status:"Active"},
+  {id:"c28",grade:"Luxury",gender:"Female",name:"Omnia Crystalline",inspired:"Bvlgari - Omnia Crystalline",price:375,supplier:"MG",status:"Active"},
+  {id:"c29",grade:"Luxury",gender:"Female",name:"Baccarat Rouge",inspired:"Maison Francis - Baccarat Rouge 540",price:375,supplier:"GRASSE",status:"Active"},
+  {id:"c30",grade:"Luxury",gender:"Unisex",name:"Vanilla Anise",inspired:"Jo Malone - Vanilla and Anise",price:375,supplier:"GRASSE",status:"Active"},
+  {id:"c31",grade:"Luxury",gender:"Unisex",name:"Sage and Seasalt",inspired:"Jo Malone - Sage and Sea Salt",price:375,supplier:"GRASSE",status:"Active"},
+  {id:"c32",grade:"Clearance",gender:"Male",name:"Sauvage Elixir",inspired:"Dior - Sauvage Elixir",price:300,supplier:"",status:"Clearance"},
+  {id:"c33",grade:"Clearance",gender:"Female",name:"Incanto Shine",inspired:"S. Ferragamo - Incanto Shine",price:300,supplier:"",status:"Clearance"},
+  {id:"c34",grade:"Clearance",gender:"Female",name:"Coco Mademoiselle",inspired:"Chanel - Coco Mademoiselle",price:300,supplier:"",status:"Clearance"},
+];
+
+const SEED_COSTING = [
+  {id:"cost01",name:"Baccarat Rouge",oilCost:200,fixative:50,alcohol:60,moisturizer:15,box:30,label:10,markup:100,notes:""},
+  {id:"cost02",name:"Valaya",oilCost:224,fixative:50,alcohol:60,moisturizer:15,box:30,label:10,markup:100,notes:""},
+  {id:"cost03",name:"Miss Dior",oilCost:240,fixative:50,alcohol:60,moisturizer:15,box:30,label:10,markup:100,notes:""},
+  {id:"cost04",name:"VS Bombshell",oilCost:168,fixative:50,alcohol:60,moisturizer:15,box:30,label:10,markup:100,notes:""},
+  {id:"cost05",name:"Versace - Eros",oilCost:168,fixative:50,alcohol:60,moisturizer:15,box:30,label:10,markup:100,notes:""},
+  {id:"cost06",name:"Imagination",oilCost:240,fixative:50,alcohol:60,moisturizer:15,box:30,label:10,markup:100,notes:""},
+  {id:"cost07",name:"Aventus",oilCost:252,fixative:50,alcohol:60,moisturizer:15,box:30,label:10,markup:100,notes:""},
+];
+
+const SEED_BOTTLE_STOCK = [
+  {id:"bs01",name:"Standard Glass Bottle",size:"5ml",stock:0,totalAdded:0,totalUsed:0,notes:""},
+  {id:"bs02",name:"Standard Glass Bottle",size:"10ml",stock:0,totalAdded:0,totalUsed:0,notes:""},
+];
+
+// ── SUPABASE ─────────────────────────────────────────────────────────────────
+const SUPABASE_URL = 'https://kuijgzqjsuiqhdsrjxwt.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_hYBtrP2N0gm99GQIvLcrYw_73i7pq7e';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ── STATE ────────────────────────────────────────────────────────────────────
+let inv=[], orders=[], purchases=[], batches=[], catalogue=[], costing=[], bottleStock=[];
+let activeTab='dash', editId=null;
+let sortState={inv:{k:'batch',d:1},orders:{k:'num',d:1},purchases:{k:'batch',d:1},catalogue:{k:'grade',d:1},costing:{k:'name',d:1},bottles:{k:'size',d:1}};
+let dbFileHandle = null;   // FileSystemFileHandle — the live Excel file
+let saveTimer    = null;   // debounce timer
+
+// ── INDEXEDDB for file handle persistence ────────────────────────────────────
+function openIDB(){
+  return new Promise((res,rej)=>{
+    const req=indexedDB.open('tsg_db',1);
+    req.onupgradeneeded=e=>e.target.result.createObjectStore('handles');
+    req.onsuccess=e=>res(e.target.result);
+    req.onerror=e=>rej(e);
+  });
+}
+async function storeHandle(handle){
+  try{const db=await openIDB();const tx=db.transaction('handles','readwrite');tx.objectStore('handles').put(handle,'dbfile');}catch(e){}
+}
+async function loadStoredHandle(){
+  try{
+    const db=await openIDB();
+    return new Promise((res)=>{
+      const tx=db.transaction('handles','readonly');
+      const req=tx.objectStore('handles').get('dbfile');
+      req.onsuccess=()=>res(req.result||null);
+      req.onerror=()=>res(null);
+    });
+  }catch(e){return null;}
+}
+async function clearStoredHandle(){
+  try{const db=await openIDB();const tx=db.transaction('handles','readwrite');tx.objectStore('handles').delete('dbfile');}catch(e){}
+}
+
+// ── LOAD FROM EXCEL ──────────────────────────────────────────────────────────
+async function loadFromFile(handle){
+  const file = await handle.getFile();
+  const buf  = await file.arrayBuffer();
+  const wb   = XLSX.read(buf, {type:'array'});
+
+  // Inventory sheet
+  const invSheet=wb.Sheets['Inventory'];
+  if(invSheet){
+    const rows=XLSX.utils.sheet_to_json(invSheet,{header:1});
+    // Detect format: new format has 'Stock' at col[2], old has 'Qty of Oil'
+    const header=rows[0]||[];
+    const isNewFmt = String(header[2]||'').toLowerCase().includes('stock');
+    inv=rows.slice(1).filter(r=>r[0]&&r[1]).map((r,idx)=>{
+      if(isNewFmt){
+        // NEW format: Batch | Scent Name | Stock | Min Stock Alert | Remarks
+        return {
+          id:'i'+Date.now()+idx,
+          batch:String(r[0]||'').trim(),
+          name:String(r[1]||'').trim(),
+          stock:+r[2]||0,
+          minStock:+r[3]||2,
+          remarks:String(r[4]||'').trim()
+        };
+      } else {
+        // LEGACY format: Batch | Scent Name | Qty Oil | Bottles | Remaining | Remarks
+        const oil=+r[2]||0, bottles=+r[3]||0;
+        return {
+          id:'i'+Date.now()+idx,
+          batch:String(r[0]||'').trim(),
+          name:String(r[1]||'').trim(),
+          stock:Math.max(0,oil*4-bottles), // migrate formula to stock
+          minStock:2,
+          remarks:String(r[5]||'').trim()
+        };
+      }
+    });
+  } else {
+    inv = JSON.parse(JSON.stringify(SEED_INVENTORY));
+  }
+
+  // Orders sheet
+  const ordSheet=wb.Sheets['Orders'];
+  if(ordSheet){
+    const rows=XLSX.utils.sheet_to_json(ordSheet,{header:1});
+    orders=rows.slice(1).filter(r=>r[1]).map((r,i)=>{
+      const status=String(r[6]||'Pending').trim();
+      const deductedCell=String(r[11]||'').trim().toUpperCase();
+      const stockDeducted=deductedCell==='YES'||(deductedCell===''&&status==='Done');
+      return {
+        id:'o'+Date.now()+i,
+        num:+r[0]||0,
+        name:String(r[1]||'').trim(),
+        price:+r[2]||0,
+        customer:String(r[3]||'').trim(),
+        gender:String(r[4]||'').trim(),
+        date:String(r[5]||'').trim(),
+        status,
+        batch:String(r[7]||'').trim(),
+        delivered:String(r[8]||'No').trim(),
+        paid:String(r[9]||'No').trim(),
+        payment:String(r[10]||'N/A').trim(),
+        stockDeducted
+      };
+    });
+  } else {
+    orders = JSON.parse(JSON.stringify(SEED_ORDERS));
+  }
+
+  // Purchases sheet
+  const purSheet=wb.Sheets['Purchases'];
+  if(purSheet){
+    const rows=XLSX.utils.sheet_to_json(purSheet,{header:1});
+    purchases=rows.slice(1).filter(r=>r[0]&&r[1]).map((r,i)=>({
+      id:'p'+Date.now()+i,
+      batch:String(r[0]||'').trim(),
+      item:String(r[1]||'').trim(),
+      qty:+r[2]||1,
+      price:+r[3]||0,
+      total:+r[4]||(+r[2]*+r[3])||0 // fallback: recalc if total missing
+    }));
+  } else {
+    purchases = JSON.parse(JSON.stringify(SEED_PURCHASES));
+  }
+
+  // Batches
+  const batchSheet=wb.Sheets['Batches'];
+  if(batchSheet){
+    const rows=XLSX.utils.sheet_to_json(batchSheet,{header:1});
+    batches=rows.slice(1).map(r=>String(r[0]||'').trim()).filter(Boolean);
+  }
+  if(!batches||!batches.length){
+    const allBatches=new Set([...inv.map(i=>i.batch),...orders.map(o=>o.batch),...purchases.map(p=>p.batch)]);
+    batches=[...allBatches].filter(Boolean).sort();
+    if(!batches.length) batches=JSON.parse(JSON.stringify(SEED_BATCHES));
+  }
+  // Catalogue
+  const catSheet=wb.Sheets['Catalogue'];
+  if(catSheet){
+    const rows=XLSX.utils.sheet_to_json(catSheet,{header:1});
+    catalogue=rows.slice(1).filter(r=>r[2]).map((r,i)=>({
+      id:'c'+Date.now()+i, grade:String(r[0]||''), gender:String(r[1]||''),
+      name:String(r[2]||'').trim(), inspired:String(r[3]||'').trim(),
+      price:+r[4]||0, supplier:String(r[5]||''), status:String(r[6]||'Active')
+    }));
+  } else {
+    catalogue=JSON.parse(JSON.stringify(SEED_CATALOGUE));
+  }
+  // Costing
+  const costSheet=wb.Sheets['Costing'];
+  if(costSheet){
+    const rows=XLSX.utils.sheet_to_json(costSheet,{header:1});
+    costing=rows.slice(1).filter(r=>r[0]).map((r,i)=>({
+      id:'cost'+Date.now()+i, name:String(r[0]||'').trim(),
+      oilCost:+r[1]||0, fixative:+r[2]||0, alcohol:+r[3]||0,
+      moisturizer:+r[4]||0, box:+r[5]||30, label:+r[6]||10,
+      markup:+r[7]||100, notes:String(r[8]||'')
+    }));
+  } else {
+    costing=JSON.parse(JSON.stringify(SEED_COSTING));
+  }
+  // Bottle Stock
+  const botSheet=wb.Sheets['BottleStock'];
+  if(botSheet){
+    const rows=XLSX.utils.sheet_to_json(botSheet,{header:1});
+    bottleStock=rows.slice(1).filter(r=>r[0]).map((r,i)=>({
+      id:'bs'+Date.now()+i, name:String(r[0]||'').trim(),
+      size:String(r[1]||'5ml'), stock:+r[2]||0,
+      totalAdded:+r[3]||0, totalUsed:+r[4]||0,
+      notes:String(r[5]||'')
+    }));
+  } else {
+    bottleStock=JSON.parse(JSON.stringify(SEED_BOTTLE_STOCK));
+  }
+  // Normalize orders: derive stockDeducted from status for old records
+  orders.forEach(o=>{
+    if(typeof o.stockDeducted === 'undefined'){
+      o.stockDeducted = (o.status==='Done');
+    }
+    // Normalize delivered/paid/payment defaults
+    if(!o.delivered) o.delivered='No';
+    if(!o.paid)      o.paid='No';
+    if(!o.payment)   o.payment='N/A';
+  });
+
+  // Migrate any remaining legacy inventory entries to new stock system
+  inv.forEach(i=>{
+    if(typeof i.stock!=='number'){
+      i.stock = Math.max(0,(+i.oil||0)*4-(+i.bottles||0));
+      i.minStock = i.minStock||2;
+    }
+    // Clean up legacy fields to prevent formula fallback
+    delete i.oil;
+    delete i.bottles;
+  });
+}
+
+// ── SAVE TO EXCEL ─────────────────────────────────────────────────────────────
+function save(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=>doSave().catch(e=>showSaveStatus('error','Save failed: '+e.message)), 600);
+}
+
+// Map of local array -> {table, mapRow} used to push current state to Supabase
+const SB_TABLES = {
+  inv:        { table:'inventory',    map:i=>({id:i.id, batch:i.batch, name:i.name, stock:+i.stock||0, min_stock:+i.minStock||2, remarks:i.remarks||''}) },
+  bottleStock:{ table:'bottle_stock', map:b=>({id:b.id, name:b.name, size:b.size, stock:+b.stock||0, total_added:+b.totalAdded||0, total_used:+b.totalUsed||0, notes:b.notes||''}) },
+  orders:     { table:'orders',       map:o=>({id:o.id, num:+o.num||0, batch:o.batch, name:o.name, price:+o.price||0, gender:o.gender, customer:o.customer, date:o.date||null, status:o.status, delivered:o.delivered, paid:o.paid, payment:o.payment, stock_deducted:!!o.stockDeducted}) },
+  purchases:  { table:'purchases',    map:p=>({id:p.id, batch:p.batch, item:p.item, qty:+p.qty||0, price:+p.price||0, total:+p.total||0}) },
+  catalogue:  { table:'catalogue',    map:c=>({id:c.id, grade:c.grade, gender:c.gender, name:c.name, inspired:c.inspired, price:+c.price||0, supplier:c.supplier, status:c.status}) },
+  costing:    { table:'costing',      map:c=>({id:c.id, name:c.name, oil_cost:+c.oilCost||0, fixative:+c.fixative||0, alcohol:+c.alcohol||0, moisturizer:+c.moisturizer||0, box:+c.box||30, label:+c.label||10, markup:+c.markup||100, notes:c.notes||''}) },
+};
+
+async function doSave(){
+  showSaveStatus('saving','Syncing to Supabase...');
+  try{
+    const arrays = {inv,bottleStock,orders,purchases,catalogue,costing};
+    for(const key of Object.keys(SB_TABLES)){
+      const {table,map} = SB_TABLES[key];
+      const rows = arrays[key].map(map);
+      if(rows.length){
+        const {error} = await sb.from(table).upsert(rows, {onConflict:'id'});
+        if(error) throw error;
+      }
+    }
+    // batches: simple text primary key list
+    if(batches.length){
+      const {error:be} = await sb.from('batches').upsert(batches.map(name=>({name})), {onConflict:'name'});
+      if(be) throw be;
+    }
+    showSaveStatus('saved','Saved ✓');
+    setTimeout(()=>hideSaveStatus(), 2500);
+  }catch(e){
+    showSaveStatus('error','Save failed: '+e.message);
+    console.error('Save error:',e);
+  }
+}
+
+// Explicit row delete — call alongside local array splice/filter so Supabase
+// actually removes the row (a plain upsert of the remaining array won't do this).
+async function sbDelete(key,id){
+  const {table} = SB_TABLES[key];
+  try{ await sb.from(table).delete().eq('id',id); }
+  catch(e){ console.error('Delete sync failed:',e); }
+}
+async function sbDeleteBatch(name){
+  try{ await sb.from('batches').delete().eq('name',name); }
+  catch(e){ console.error('Batch delete sync failed:',e); }
+}
+
+function buildWorkbook(){
+  const wb=XLSX.utils.book_new();
+
+  // Inventory (new manual stock format)
+  const invRows=[['Batch','Scent Name','Stock','Min Stock Alert','Remarks']];
+  inv.forEach(i=>invRows.push([i.batch,i.name,getStock(i),i.minStock||2,i.remarks||'']));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(invRows),'Inventory');
+  // Bottle Stock
+  const botRows=[['Bottle Type','Size','Current Stock','Total Added','Total Used','Notes']];
+  bottleStock.forEach(b=>botRows.push([b.name,b.size,b.stock||0,b.totalAdded||0,b.totalUsed||0,b.notes||'']));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(botRows),'BottleStock');
+
+  // Orders
+  const ordRows=[['#','Fragrance Name','Price','Customer','Gender','Date','Status','Batch','Delivered','Paid','Payment','StockDeducted']];
+  orders.forEach(o=>ordRows.push([o.num,o.name,o.price,o.customer,o.gender,o.date,o.status,o.batch,o.delivered,o.paid,o.payment,o.stockDeducted?'YES':'NO']));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ordRows),'Orders');
+
+  // Purchases
+  const purRows=[['Batch','Item Name','Qty','Price/Unit','Total']];
+  purchases.forEach(p=>purRows.push([p.batch,p.item,p.qty,p.price,p.total]));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(purRows),'Purchases');
+
+  // Batches
+  const batRows=[['Batch Name'],...batches.map(b=>[b])];
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(batRows),'Batches');
+
+  // Catalogue
+  const catRows=[['Grade','Gender','Fragrance Name','Inspired By','Price','Supplier','Status']];
+  catalogue.forEach(c=>catRows.push([c.grade,c.gender,c.name,c.inspired,c.price,c.supplier,c.status]));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(catRows),'Catalogue');
+  // Costing
+  const costRows=[['Fragrance Name','Oil Cost','Fixative','Alcohol','Moisturizer','Box','Label','Markup%','Notes']];
+  costing.forEach(c=>costRows.push([c.name,c.oilCost,c.fixative,c.alcohol,c.moisturizer,c.box||30,c.label||10,c.markup||100,c.notes||'']));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(costRows),'Costing');
+  // Summary
+  const paidSales=orders.filter(o=>o.paid==='Yes').reduce((a,o)=>a+(+o.price||0),0);
+  const totalPur=purchases.reduce((a,p)=>a+(+p.total||0),0);
+  const sumRows=[
+    ['THE SCENT GALLERY — SUMMARY',''],
+    ['Generated',new Date().toLocaleString('en-PH')],
+    [''],
+    ['Total Revenue (Paid)',paidSales],
+    ['Total Purchases',totalPur],
+    ['Net Profit',paidSales-totalPur],
+    ['Total Orders',orders.length],
+    ['Paid Orders',orders.filter(o=>o.paid==='Yes').length],
+    ['Unpaid Orders',orders.filter(o=>o.paid==='No').length],
+    ['Delivered',orders.filter(o=>o.delivered==='Yes').length],
+    ['Not Delivered',orders.filter(o=>o.delivered==='No').length],
+    ['Total Inventory Entries',inv.length],
+    ['Total Bottles Remaining',inv.reduce((a,i)=>a+getStock(i),0)],
+  ];
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sumRows),'Summary');
+
+  return XLSX.write(wb,{bookType:'xlsx',type:'array'});
+}
+
+// ── SAVE STATUS INDICATOR ────────────────────────────────────────────────────
+function showSaveStatus(type,msg){
+  const el=document.getElementById('save-indicator');
+  const sp=document.getElementById('save-spinner');
+  const tx=document.getElementById('save-text');
+  el.className='visible '+(type==='saved'?'saved':type==='error'?'error':'');
+  sp.style.display=type==='saving'?'block':'none';
+  tx.textContent=msg;
+}
+function hideSaveStatus(){
+  document.getElementById('save-indicator').className='';
+}
+
+// ── FILE PICKER ───────────────────────────────────────────────────────────────
+async function pickExcelFile(){
+  if(!window.showOpenFilePicker){
+    alert('Your browser does not support direct file access.\n\nPlease use Google Chrome or Microsoft Edge.');
+    return;
+  }
+  try{
+    const [handle]=await window.showOpenFilePicker({
+      types:[{description:'Excel Files',accept:{'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':['.xlsx']}}],
+      multiple:false
+    });
+    await connectToFile(handle);
+  }catch(e){
+    if(e.name!=='AbortError') alert('Could not open file: '+e.message);
+  }
+}
+
+async function createNewDatabase(){
+  if(!window.showSaveFilePicker){
+    alert('Your browser does not support direct file access.\n\nPlease use Google Chrome or Microsoft Edge.');
+    return;
+  }
+  try{
+    const handle=await window.showSaveFilePicker({
+      suggestedName:'TSG_Database.xlsx',
+      types:[{description:'Excel Files',accept:{'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':['.xlsx']}}]
+    });
+    // Start with seed data for new file
+    inv=JSON.parse(JSON.stringify(SEED_INVENTORY));
+    orders=JSON.parse(JSON.stringify(SEED_ORDERS));
+    purchases=JSON.parse(JSON.stringify(SEED_PURCHASES));
+    batches=JSON.parse(JSON.stringify(SEED_BATCHES));
+    catalogue=JSON.parse(JSON.stringify(SEED_CATALOGUE));
+    costing=JSON.parse(JSON.stringify(SEED_COSTING));
+    bottleStock=JSON.parse(JSON.stringify(SEED_BOTTLE_STOCK));
+    dbFileHandle=handle;
+    await storeHandle(handle);
+    const buf=buildWorkbook();
+    const writable=await handle.createWritable();
+    await writable.write(buf);
+    await writable.close();
+    setDBBadge(handle.name);
+    showMainApp();
+  }catch(e){
+    if(e.name!=='AbortError') alert('Could not create file: '+e.message);
+  }
+}
+
+async function connectToFile(handle){
+  // Check permission
+  let perm=await handle.queryPermission({mode:'readwrite'});
+  if(perm!=='granted') perm=await handle.requestPermission({mode:'readwrite'});
+  if(perm!=='granted'){alert('Read/write permission is required to use this file.');return;}
+  dbFileHandle=handle;
+  await storeHandle(handle);
+  await loadFromFile(handle);
+  setDBBadge(handle.name);
+  showMainApp();
+}
+
+async function openRememberedFile(){
+  const handle=await loadStoredHandle();
+  if(!handle){document.getElementById('db-remembered-bar').classList.remove('visible');return;}
+  try{await connectToFile(handle);}
+  catch(e){
+    document.getElementById('db-remembered-bar').classList.remove('visible');
+    await clearStoredHandle();
+    alert('Could not reconnect to last file. Please pick it again.');
+  }
+}
+
+function setDBBadge(name){
+  const el=document.getElementById('db-file-badge');
+  if(el){el.textContent='&#128196; '+name;el.title='Connected: '+name;}
+}
+
+function showMainApp(){
+  document.getElementById('db-screen').classList.remove('visible');
+  document.getElementById('app-content').style.display='block';
+  render();
+}
+
+function changeFile(){
+  if(!confirm('Refresh data from Supabase? Any unsaved changes in open forms will be lost.')) return;
+  load().then(()=>{render();}).catch(e=>alert('Refresh failed: '+e.message));
+}
+
+// ── LOAD FROM SUPABASE ──────────────────────────────────────────────────────
+async function load(){
+  const [invR,botR,ordR,purR,batR,catR,costR] = await Promise.all([
+    sb.from('inventory').select('*'),
+    sb.from('bottle_stock').select('*'),
+    sb.from('orders').select('*'),
+    sb.from('purchases').select('*'),
+    sb.from('batches').select('*'),
+    sb.from('catalogue').select('*'),
+    sb.from('costing').select('*'),
+  ]);
+  for(const r of [invR,botR,ordR,purR,batR,catR,costR]){
+    if(r.error) throw r.error;
+  }
+  inv = (invR.data||[]).map(r=>({id:r.id,batch:r.batch,name:r.name,stock:r.stock,minStock:r.min_stock,remarks:r.remarks||''}));
+  bottleStock = (botR.data||[]).map(r=>({id:r.id,name:r.name,size:r.size,stock:r.stock,totalAdded:r.total_added,totalUsed:r.total_used,notes:r.notes||''}));
+  orders = (ordR.data||[]).map(r=>({id:r.id,num:r.num,batch:r.batch,name:r.name,price:r.price,gender:r.gender,customer:r.customer,date:r.date,status:r.status,delivered:r.delivered,paid:r.paid,payment:r.payment,stockDeducted:r.stock_deducted}));
+  purchases = (purR.data||[]).map(r=>({id:r.id,batch:r.batch,item:r.item,qty:r.qty,price:r.price,total:r.total}));
+  batches = (batR.data||[]).map(r=>r.name);
+  catalogue = (catR.data||[]).map(r=>({id:r.id,grade:r.grade,gender:r.gender,name:r.name,inspired:r.inspired,price:r.price,supplier:r.supplier,status:r.status}));
+  costing = (costR.data||[]).map(r=>({id:r.id,name:r.name,oilCost:r.oil_cost,fixative:r.fixative,alcohol:r.alcohol,moisturizer:r.moisturizer,box:r.box,label:r.label,markup:r.markup,notes:r.notes||''}));
+
+  // First-ever run (empty database): seed it once so the app isn't blank.
+  if(!inv.length && !orders.length && !purchases.length && !catalogue.length && !costing.length && !bottleStock.length){
+    inv=JSON.parse(JSON.stringify(SEED_INVENTORY));
+    orders=JSON.parse(JSON.stringify(SEED_ORDERS));
+    purchases=JSON.parse(JSON.stringify(SEED_PURCHASES));
+    batches=JSON.parse(JSON.stringify(SEED_BATCHES));
+    catalogue=JSON.parse(JSON.stringify(SEED_CATALOGUE));
+    costing=JSON.parse(JSON.stringify(SEED_COSTING));
+    bottleStock=JSON.parse(JSON.stringify(SEED_BOTTLE_STOCK));
+    await doSave();
+  }
+}
+
+// ── UTILS ────────────────────────────────────────────────────────────────────
+const fmt = n => '₱'+Number(n||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const uid = () => 'id'+Date.now()+Math.random().toString(36).slice(2,6);
+const rem = (oil,bot) => Math.max(0,(parseFloat(oil)||0)*4-(parseFloat(bot)||0));
+
+// ── TAB SWITCH ───────────────────────────────────────────────────────────────
+function switchTab(t){
+  activeTab=t;
+  ['dash','inv','orders','purchases','bottles','catalogue','costing'].forEach(x=>{
+    const p=document.getElementById('panel-'+x);
+    const tb=document.getElementById('tab-'+x);
+    if(p) p.classList.toggle('active',x===t);
+    if(tb) tb.classList.toggle('active',x===t);
+  });
+  const addLabels={dash:null,inv:'Add Fragrance',orders:'Add Order',purchases:'Add Purchase',bottles:'Add Bottle Type',catalogue:'Add Fragrance',costing:'Add Costing'};
+  const addBtn=document.getElementById('tb-add');
+  if(addLabels[t]){addBtn.style.display='';addBtn.textContent='+ '+addLabels[t];}
+  else addBtn.style.display='none';
+  const isOrders=t==='orders';
+  document.getElementById('tb-status-filter').style.display=isOrders?'':'none';
+  document.getElementById('tb-paid-filter').style.display=isOrders?'':'none';
+  document.getElementById('tb-delivery-filter').style.display=isOrders?'':'none';
+  document.getElementById('tb-export-csv').style.display=t!=='dash'?'':'none';
+  if(!isOrders){
+    document.getElementById('tb-paid-filter').value='';
+    document.getElementById('tb-delivery-filter').value='';
+    document.getElementById('tb-status-filter').value='';
+    document.getElementById('filter-chips').style.display='none';
+  }
+  // Clear search when switching tabs so it doesn't bleed across
+  document.getElementById('tb-search').value='';
+  render();
+}
+
+// ── RENDER BATCH OPTIONS ─────────────────────────────────────────────────────
+function renderBatches(){
+  const cur=document.getElementById('tb-batch-filter').value;
+  ['tb-batch-filter','inv-f-batch','ord-f-batch','pur-f-batch'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    const isFilter=id==='tb-batch-filter';
+    el.innerHTML=isFilter?'<option value="">All Batches</option>':'';
+    batches.forEach(b=>el.innerHTML+=`<option value="${b}"${b===cur&&isFilter?' selected':''}>${b}</option>`);
+  });
+}
+
+// ── MAIN RENDER ──────────────────────────────────────────────────────────────
+function render(){
+  renderBatches();
+  updateHint();
+  if(activeTab==='dash') renderDash();
+  else if(activeTab==='inv') renderInv();
+  else if(activeTab==='orders') renderOrders();
+  else if(activeTab==='purchases') renderPurchases();
+  else if(activeTab==='bottles') renderBottles();
+  else if(activeTab==='catalogue') renderCatalogue();
+  else if(activeTab==='costing') renderCosting();
+}
+
+function updateHint(){
+  const paidSales=orders.filter(o=>o.paid==='Yes').reduce((a,o)=>a+(+o.price||0),0);
+  const totalPur=purchases.reduce((a,p)=>a+(+p.total||0),0);
+  document.getElementById('tb-hint').textContent=
+    `${inv.length} inventory · ${orders.length} orders · ${purchases.length} purchases · Profit: ${fmt(paidSales-totalPur)}`;
+}
+
+// ── DASHBOARD ────────────────────────────────────────────────────────────────
+function renderDash(){
+  const totalSales=orders.filter(o=>o.paid==='Yes').reduce((a,o)=>a+(+o.price||0),0);
+  const totalPur=purchases.reduce((a,p)=>a+(+p.total||0),0);
+  const profit=totalSales-totalPur;
+  const pending=orders.filter(o=>o.paid==='No'&&o.status!=='Cancelled').reduce((a,o)=>a+(+o.price||0),0);
+  const totalRem=inv.reduce((a,i)=>a+rem(i.oil,i.bottles),0);
+  const lowStock=inv.filter(i=>rem(i.oil,i.bottles)>0&&rem(i.oil,i.bottles)<=3).length;
+
+  const totalBottles = bottleStock.reduce((a,b)=>a+(+b.stock||0),0);
+  document.getElementById('dash-stats').innerHTML=`
+    <div class="stat-card green"><div class="stat-lbl">Total Sales (Paid)</div><div class="stat-val">${fmt(totalSales)}</div><div class="stat-sub">${orders.filter(o=>o.paid==='Yes').length} paid orders</div></div>
+    <div class="stat-card red"><div class="stat-lbl">Total Purchases</div><div class="stat-val">${fmt(totalPur)}</div><div class="stat-sub">${purchases.length} purchase records</div></div>
+    <div class="stat-card gold" style="border-left-color:var(--gold)"><div class="stat-lbl">Net Profit</div><div class="stat-val" style="color:${profit>=0?'var(--green)':'var(--red)'}">${fmt(profit)}</div><div class="stat-sub">Sales minus purchases</div></div>
+    <div class="stat-card orange"><div class="stat-lbl">Pending Collections</div><div class="stat-val">${fmt(pending)}</div><div class="stat-sub">Unpaid orders</div></div>
+    <div class="stat-card blue"><div class="stat-lbl">Bottle Stock</div><div class="stat-val">${totalBottles}</div><div class="stat-sub">${lowStock} fragrance low stock</div></div>`;
+
+  document.getElementById('dash-profit').innerHTML=`
+    <div class="profit-item"><div class="profit-lbl">Total Revenue</div><div class="profit-val">${fmt(totalSales)}</div></div>
+    <div class="profit-item"><div class="profit-lbl">Total Purchases</div><div class="profit-val">${fmt(totalPur)}</div></div>
+    <div class="profit-item"><div class="profit-lbl">Net Profit</div><div class="profit-val ${profit>=0?'green':'accent'}">${fmt(profit)}</div></div>`;
+
+  // Top scents
+  const scCount={};
+  orders.forEach(o=>scCount[o.name]=(scCount[o.name]||0)+1);
+  const top=Object.entries(scCount).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  document.getElementById('dash-top-scents').innerHTML=top.map(([n,c])=>
+    `<div class="dash-list-item"><span class="name">${esc(n)}</span><span class="val">${c} order${c>1?'s':''}</span></div>`).join('');
+
+  // Low stock
+  const low=inv.filter(i=>getStock(i)<=(i.minStock||2)).sort((a,b)=>getStock(a)-getStock(b)).slice(0,8);
+  document.getElementById('dash-low-stock').innerHTML=low.length?low.map(i=>{
+    const s=getStock(i);
+    const cls=s===0?'accent':'orange';
+    return `<div class="dash-list-item"><span class="name">${esc(i.name)} <span style="font-size:10px;color:var(--lgray)">${i.batch}</span></span><span class="val ${cls}">${s} left</span></div>`;
+  }).join(''):'<div style="color:var(--lgray);font-size:13px;padding:8px 0">All stock healthy ✓</div>';
+
+  // Sales by batch
+  const bSales={};
+  orders.filter(o=>o.paid==='Yes').forEach(o=>bSales[o.batch]=(bSales[o.batch]||0)+(+o.price||0));
+  const bArr=Object.entries(bSales).sort((a,b)=>b[1]-a[1]);
+  document.getElementById('dash-batch-sales').innerHTML=bArr.map(([b,s])=>
+    `<div class="dash-list-item"><span class="name">${esc(b)}</span><span class="val green">${fmt(s)}</span></div>`).join('');
+
+  // Recent orders
+  const recent=[...orders].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,8);
+  document.getElementById('dash-recent-orders').innerHTML=recent.map(o=>
+    `<div class="dash-list-item"><span class="name">${esc(o.name)} <span style="font-size:10px;color:var(--lgray)">${esc(o.customer)}</span></span><span class="val ${o.paid==='Yes'?'green':'accent'}">${fmt(o.price)}</span></div>`).join('');
+}
+
+// ── INVENTORY RENDER ─────────────────────────────────────────────────────────
+function getStock(i){
+  if(!i) return 0;
+  // New format: stock field directly set
+  if(typeof i.stock === 'number') return i.stock;
+  // Legacy format: formula-based (should be migrated on load, but fallback here)
+  const legacy = Math.max(0,(+i.oil||0)*4-(+i.bottles||0));
+  // Auto-migrate to prevent future recurrence
+  i.stock = legacy;
+  delete i.oil;
+  delete i.bottles;
+  return legacy;
+}
+function renderInv(){
+  const search=document.getElementById('tb-search').value.toLowerCase();
+  const batch=document.getElementById('tb-batch-filter').value;
+  let data=inv.filter(i=>{
+    return (!batch||i.batch===batch)&&(i.name.toLowerCase().includes(search)||i.batch.toLowerCase().includes(search)||(i.remarks||'').toLowerCase().includes(search));
+  });
+  const ss=sortState.inv;
+  data.sort((a,b)=>{
+    let av=ss.k==='stock'?getStock(a):a[ss.k];
+    let bv=ss.k==='stock'?getStock(b):b[ss.k];
+    return typeof av==='string'?av.localeCompare(bv)*ss.d:(av-bv)*ss.d;
+  });
+  const totalStock=inv.reduce((a,i)=>a+getStock(i),0);
+  const lowCnt=inv.filter(i=>getStock(i)>0&&getStock(i)<=(i.minStock||2)).length;
+  const outCnt=inv.filter(i=>getStock(i)===0).length;
+  const autoDeducted=orders.filter(o=>o.status==='Done').length;
+  document.getElementById('inv-stats').innerHTML=`
+    <div class="stat-card"><div class="stat-lbl">Total Fragrances</div><div class="stat-val">${inv.length}</div><div class="stat-sub">Scent records</div></div>
+    <div class="stat-card green"><div class="stat-lbl">Total Stock</div><div class="stat-val">${totalStock}</div><div class="stat-sub">Bottles available</div></div>
+    <div class="stat-card orange"><div class="stat-lbl">Low Stock</div><div class="stat-val">${lowCnt}</div><div class="stat-sub">At or below min alert</div></div>
+    <div class="stat-card red"><div class="stat-lbl">Out of Stock</div><div class="stat-val">${outCnt}</div><div class="stat-sub">0 bottles remaining</div></div>
+    <div class="stat-card blue"><div class="stat-lbl">Auto-Deducted</div><div class="stat-val">${autoDeducted}</div><div class="stat-sub">From done orders</div></div>`;
+  const tbody=document.getElementById('inv-body');
+  if(!data.length){tbody.innerHTML=`<tr><td colspan="6" class="empty-state"><p>No entries found.</p></td></tr>`;return;}
+  tbody.innerHTML=data.map(i=>{
+    const s=getStock(i);
+    const min=i.minStock||2;
+    const rc=s===0?'row-out':s<=min?'row-low':'';
+    const vc=s===0?'rem-out':s<=min?'rem-low':'rem-ok';
+    return `<tr class="${rc}">
+      <td><span class="badge badge-dark">${esc(i.batch)}</span></td>
+      <td><strong>${esc(i.name)}</strong></td>
+      <td class="c"><span class="${vc}" style="font-family:var(--serif);font-size:18px;font-weight:600">${s}</span></td>
+      <td class="c"><span style="font-size:12px;color:var(--lgray)">${min}</span></td>
+      <td style="color:var(--gray);font-style:italic;font-size:12px">${esc(i.remarks||'')}</td>
+      <td class="c no-print" style="white-space:nowrap">
+        <button class="act-btn" title="Restock / Set Stock" onclick="openFragRestock('${i.id}')" style="color:var(--green);font-size:13px">&#128230;</button>
+        <button class="act-btn" title="Edit" onclick="openEdit('inv','${i.id}')">&#9998;</button>
+        <button class="act-btn" title="Delete" onclick="delItem('inv','${i.id}')">&#10005;</button>
+      </td></tr>`;
+  }).join('');
+}
+
+// ── ORDERS RENDER ────────────────────────────────────────────────────────────
+function renderOrders(){
+  const search=document.getElementById('tb-search').value.toLowerCase();
+  const batch=document.getElementById('tb-batch-filter').value;
+  const status=document.getElementById('tb-status-filter').value;
+  const paid=document.getElementById('tb-paid-filter').value;
+  const delivery=document.getElementById('tb-delivery-filter').value;
+  let data=orders.filter(o=>{
+    return (!batch||o.batch===batch)
+      &&(!status||o.status===status)
+      &&(!paid||o.paid===paid)
+      &&(!delivery||o.delivered===delivery)
+      &&(o.name.toLowerCase().includes(search)||o.customer.toLowerCase().includes(search)||(o.num+'').includes(search));
+  });
+  const ss=sortState.orders;
+  data.sort((a,b)=>{
+    let av=a[ss.k],bv=b[ss.k];
+    return typeof av==='string'?av.localeCompare(bv)*ss.d:(av-bv)*ss.d;
+  });
+  const paidSales=orders.filter(o=>o.paid==='Yes').reduce((a,o)=>a+(+o.price||0),0);
+  const pendingCnt=orders.filter(o=>o.paid==='No'&&o.status!=='Cancelled').length;
+  const inProg=orders.filter(o=>o.status==='In-Progress').length;
+  const deliveredCnt=orders.filter(o=>o.delivered==='Yes').length;
+  const notDeliveredCnt=orders.filter(o=>o.delivered==='No').length;
+  // Filtered stats (reflect current filter)
+  const filtPaid=data.filter(o=>o.paid==='Yes').reduce((a,o)=>a+(+o.price||0),0);
+  const filtCount=data.length;
+  const isFiltered=paid||delivery||status||batch||search;
+  document.getElementById('orders-stats').innerHTML=`
+    <div class="stat-card"><div class="stat-lbl">${isFiltered?'Filtered':'Total'} Orders</div><div class="stat-val">${filtCount}</div><div class="stat-sub">${isFiltered?'of '+orders.length+' total':'All records'}</div></div>
+    <div class="stat-card green"><div class="stat-lbl">${isFiltered?'Filtered Revenue':'Total Revenue'}</div><div class="stat-val">${fmt(isFiltered?filtPaid:paidSales)}</div><div class="stat-sub">Paid orders only</div></div>
+    <div class="stat-card orange"><div class="stat-lbl">In-Progress</div><div class="stat-val">${inProg}</div><div class="stat-sub">Being prepared</div></div>
+    <div class="stat-card red"><div class="stat-lbl">Unpaid</div><div class="stat-val">${pendingCnt}</div><div class="stat-sub">Awaiting payment</div></div>
+    <div class="stat-card blue"><div class="stat-lbl">Delivered / Not Yet</div><div class="stat-val" style="font-size:20px"><span style="color:var(--green)">${deliveredCnt}</span> / <span style="color:var(--accent)">${notDeliveredCnt}</span></div><div class="stat-sub">Delivery status</div></div>`;
+  const tbody=document.getElementById('orders-body');
+  updateFilterChips();
+  if(!data.length){tbody.innerHTML=`<tr><td colspan="12" class="empty-state"><p>No orders found.</p></td></tr>`;return;}
+  tbody.innerHTML=data.map(o=>{
+    const rc=o.status==='In-Progress'?'row-progress':o.paid==='No'&&o.status!=='Cancelled'?'row-low':'';
+    const statBadge=o.status==='Done'?'badge-green':o.status==='In-Progress'?'badge-blue':'badge-orange';
+    return `<tr class="${rc}">
+      <td style="color:var(--lgray);font-size:12px">${o.num||''}</td>
+      <td><strong>${esc(o.name)}</strong></td>
+      <td class="r" style="font-family:var(--serif);font-size:15px">${fmt(o.price)}</td>
+      <td>${esc(o.customer)}</td>
+      <td class="c"><span style="font-size:11px">${o.gender||''}</span></td>
+      <td style="font-size:12px;color:var(--gray)">${o.date||''}</td>
+      <td><span class="badge ${statBadge}">${esc(o.status)}</span></td>
+      <td><span class="badge badge-dark" style="font-size:8px">${esc(o.batch)}</span></td>
+      <td class="c"><span class="${o.delivered==='Yes'?'badge badge-green':'badge badge-red'}">${o.delivered}</span></td>
+      <td class="c"><span class="${o.paid==='Yes'?'badge badge-green':'badge badge-red'}">${o.paid}</span></td>
+      <td style="font-size:12px;color:var(--gray)">${esc(o.payment||'')}</td>
+      <td class="c no-print">
+        <button class="act-btn" onclick="openEdit('orders','${o.id}')">&#9998;</button>
+        <button class="act-btn" onclick="delItem('orders','${o.id}')">&#10005;</button>
+      </td></tr>`;
+  }).join('');
+}
+
+// ── PURCHASES RENDER ─────────────────────────────────────────────────────────
+function renderPurchases(){
+  const search=document.getElementById('tb-search').value.toLowerCase();
+  const batch=document.getElementById('tb-batch-filter').value;
+  let data=purchases.filter(p=>{
+    return (!batch||p.batch===batch)&&(p.item.toLowerCase().includes(search)||p.batch.toLowerCase().includes(search));
+  });
+  const ss=sortState.purchases;
+  data.sort((a,b)=>{
+    let av=a[ss.k],bv=b[ss.k];
+    return typeof av==='string'?av.localeCompare(bv)*ss.d:(av-bv)*ss.d;
+  });
+  const totalPur=purchases.reduce((a,p)=>a+(+p.total||0),0);
+  const bBudget={};
+  purchases.forEach(p=>bBudget[p.batch]=(bBudget[p.batch]||0)+(+p.total||0));
+  const topBatch=Object.entries(bBudget).sort((a,b)=>b[1]-a[1])[0];
+  document.getElementById('purchases-stats').innerHTML=`
+    <div class="stat-card"><div class="stat-lbl">Total Records</div><div class="stat-val">${purchases.length}</div><div class="stat-sub">Purchase entries</div></div>
+    <div class="stat-card red"><div class="stat-lbl">Total Spent</div><div class="stat-val">${fmt(totalPur)}</div><div class="stat-sub">All batches combined</div></div>
+    <div class="stat-card"><div class="stat-lbl">Highest Batch Spend</div><div class="stat-val" style="font-size:20px">${topBatch?esc(topBatch[0]):'-'}</div><div class="stat-sub">${topBatch?fmt(topBatch[1]):''}</div></div>
+    <div class="stat-card green"><div class="stat-lbl">Batch Count</div><div class="stat-val">${batches.length}</div><div class="stat-sub">Active batch groups</div></div>
+    <div class="stat-card orange"><div class="stat-lbl">Avg per Record</div><div class="stat-val" style="font-size:20px">${purchases.length?fmt(totalPur/purchases.length):fmt(0)}</div><div class="stat-sub">Per purchase</div></div>`;
+  const tbody=document.getElementById('purchases-body');
+  if(!data.length){tbody.innerHTML=`<tr><td colspan="6" class="empty-state"><p>No purchases found.</p></td></tr>`;return;}
+  tbody.innerHTML=data.map(p=>`<tr>
+    <td><span class="badge badge-dark">${esc(p.batch)}</span></td>
+    <td>${esc(p.item)}</td>
+    <td class="c">${p.qty}</td>
+    <td class="r">${fmt(p.price)}</td>
+    <td class="r" style="font-family:var(--serif);font-size:15px;font-weight:600">${fmt(p.total)}</td>
+    <td class="c no-print">
+      <button class="act-btn" onclick="openEdit('purchases','${p.id}')">&#9998;</button>
+      <button class="act-btn" onclick="delItem('purchases','${p.id}')">&#10005;</button>
+    </td></tr>`).join('');
+}
+
+// ── SORT ─────────────────────────────────────────────────────────────────────
+function sort(tab,key){
+  const ss=sortState[tab];
+  if(ss.k===key) ss.d*=-1; else {ss.k=key;ss.d=1;}
+  render();
+}
+
+// ── OPEN ADD ─────────────────────────────────────────────────────────────────
+function openAdd(){
+  editId=null;
+  if(activeTab==='inv'){
+    document.getElementById('inv-modal-title').textContent='Add Fragrance';
+    document.getElementById('inv-save-btn').textContent='Save';
+    document.getElementById('inv-f-batch').value=document.getElementById('inv-f-batch').options[0]?.value||'';
+    document.getElementById('inv-f-name').value='';
+    document.getElementById('inv-f-stock').value='0';
+    document.getElementById('inv-f-minstk').value='2';
+    document.getElementById('inv-f-remarks').value='';
+    openModal('inv-modal');
+    setTimeout(()=>document.getElementById('inv-f-name').focus(),80);
+  } else if(activeTab==='orders'){
+    document.getElementById('orders-modal-title').textContent='Add Order';
+    document.getElementById('ord-save-btn').textContent='Save Order';
+    document.getElementById('ord-f-num').value=(Math.max(0,...orders.map(o=>+o.num||0))+1)||1;
+    document.getElementById('ord-f-name').value='';
+    document.getElementById('ord-f-price').value='';
+    document.getElementById('ord-f-customer').value='';
+    document.getElementById('ord-f-date').value=new Date().toISOString().slice(0,10);
+    document.getElementById('ord-f-status').value='Pending';
+    document.getElementById('ord-f-delivered').value='No';
+    document.getElementById('ord-f-paid').value='No';
+    document.getElementById('ord-f-payment').value='N/A';
+    document.getElementById('ord-stock-warning').style.display='none';
+    validateOrderFields();
+    openModal('orders-modal');
+    setTimeout(()=>document.getElementById('ord-f-name').focus(),80);
+  } else if(activeTab==='purchases'){
+    document.getElementById('pur-modal-title').textContent='Add Purchase';
+    document.getElementById('pur-save-btn').textContent='Save Purchase';
+    document.getElementById('pur-f-item').value='';
+    document.getElementById('pur-f-qty').value='1';
+    document.getElementById('pur-f-price').value='';
+    document.getElementById('pur-total-preview').textContent='—';
+    openModal('purchases-modal');
+    setTimeout(()=>document.getElementById('pur-f-item').focus(),80);
+  } else if(activeTab==='bottles'){
+    editId=null;
+    document.getElementById('bottles-modal-title').textContent='Add Bottle Type';
+    document.getElementById('bot-save-btn').textContent='Save';
+    document.getElementById('bot-f-name').value='Standard Glass Bottle';
+    document.getElementById('bot-f-size').value='5ml';
+    document.getElementById('bot-f-stock').value='0';
+    document.getElementById('bot-f-notes').value='';
+    openModal('bottles-modal');
+    setTimeout(()=>document.getElementById('bot-f-stock').focus(),80);
+  } else if(activeTab==='catalogue'){
+    editId=null;
+    document.getElementById('cat-modal-title').textContent='Add Fragrance to Catalogue';
+    document.getElementById('cat-save-btn').textContent='Save';
+    document.getElementById('cat-f-name').value='';
+    document.getElementById('cat-f-inspired').value='';
+    document.getElementById('cat-f-price').value='350';
+    openModal('catalogue-modal');
+    setTimeout(()=>document.getElementById('cat-f-name').focus(),80);
+  } else if(activeTab==='costing'){
+    editId=null;
+    document.getElementById('cost-modal-title').textContent='Add Costing Record';
+    document.getElementById('cost-save-btn').textContent='Save';
+    document.getElementById('cost-f-name').value='';
+    document.getElementById('cost-f-oil').value='';
+    document.getElementById('cost-f-fix').value='50';
+    document.getElementById('cost-f-alc').value='60';
+    document.getElementById('cost-f-mois').value='15';
+    document.getElementById('cost-f-box').value='30';
+    document.getElementById('cost-f-label').value='10';
+    document.getElementById('cost-f-markup').value='100';
+    document.getElementById('cost-f-notes').value='';
+    calcCostPreview();
+    openModal('costing-modal');
+    setTimeout(()=>document.getElementById('cost-f-name').focus(),80);
+  }
+}
+
+function openBatch(){openModal('batch-modal');setTimeout(()=>document.getElementById('batch-f-name').focus(),80);}
+
+// ── OPEN EDIT ────────────────────────────────────────────────────────────────
+function openEdit(tab,id){
+  editId=id;
+  if(tab==='inv'){
+    const e=inv.find(i=>i.id===id); if(!e) return;
+    editId=id;
+    document.getElementById('inv-modal-title').textContent='Edit Fragrance';
+    document.getElementById('inv-save-btn').textContent='Update';
+    document.getElementById('inv-f-batch').value=e.batch;
+    document.getElementById('inv-f-name').value=e.name;
+    document.getElementById('inv-f-stock').value=getStock(e);
+    document.getElementById('inv-f-minstk').value=e.minStock||2;
+    document.getElementById('inv-f-remarks').value=e.remarks||'';
+    openModal('inv-modal');
+  } else if(tab==='orders'){
+    const e=orders.find(o=>o.id===id); if(!e) return;
+    if(e.status==='Done'){
+      if(!confirm('This order is already marked Done.\n\nEditing a Done order may affect stock counts if you change the status.\n\nContinue?')) return;
+    }
+    editId=id;
+    document.getElementById('orders-modal-title').textContent='Edit Order';
+    document.getElementById('ord-save-btn').textContent='Update';
+    document.getElementById('ord-f-num').value=e.num;
+    document.getElementById('ord-f-batch').value=e.batch;
+    document.getElementById('ord-f-name').value=e.name;
+    document.getElementById('ord-f-price').value=e.price;
+    document.getElementById('ord-f-gender').value=e.gender;
+    document.getElementById('ord-f-customer').value=e.customer;
+    document.getElementById('ord-f-date').value=e.date;
+    document.getElementById('ord-f-status').value=e.status;
+    document.getElementById('ord-f-delivered').value=e.delivered;
+    document.getElementById('ord-f-paid').value=e.paid;
+    document.getElementById('ord-f-payment').value=e.payment;
+    document.getElementById('ord-stock-warning').style.display='none';
+    validateOrderFields();
+    openModal('orders-modal');
+  } else if(tab==='purchases'){
+    const e=purchases.find(p=>p.id===id); if(!e) return;
+    document.getElementById('pur-modal-title').textContent='Edit Purchase';
+    document.getElementById('pur-save-btn').textContent='Update';
+    document.getElementById('pur-f-batch').value=e.batch;
+    document.getElementById('pur-f-item').value=e.item;
+    document.getElementById('pur-f-qty').value=e.qty;
+    document.getElementById('pur-f-price').value=e.price;
+    calcPurTotal(); openModal('purchases-modal');
+  } else if(tab==='bottles'){
+    const e=bottleStock.find(b=>b.id===id); if(!e) return;
+    editId=id;
+    document.getElementById('bottles-modal-title').textContent='Edit Bottle Type';
+    document.getElementById('bot-save-btn').textContent='Update';
+    document.getElementById('bot-f-name').value=e.name;
+    document.getElementById('bot-f-size').value=e.size;
+    document.getElementById('bot-f-stock').value=e.stock;
+    document.getElementById('bot-f-notes').value=e.notes||'';
+    openModal('bottles-modal');
+  } else if(tab==='catalogue'){
+    const e=catalogue.find(c=>c.id===id); if(!e) return;
+    editId=id;
+    document.getElementById('cat-modal-title').textContent='Edit Catalogue Entry';
+    document.getElementById('cat-save-btn').textContent='Update';
+    document.getElementById('cat-f-grade').value=e.grade;
+    document.getElementById('cat-f-gender').value=e.gender;
+    document.getElementById('cat-f-name').value=e.name;
+    document.getElementById('cat-f-inspired').value=e.inspired;
+    document.getElementById('cat-f-price').value=e.price;
+    document.getElementById('cat-f-supplier').value=e.supplier;
+    document.getElementById('cat-f-status').value=e.status;
+    openModal('catalogue-modal');
+  } else if(tab==='costing'){
+    const e=costing.find(c=>c.id===id); if(!e) return;
+    editId=id;
+    document.getElementById('cost-modal-title').textContent='Edit Costing Record';
+    document.getElementById('cost-save-btn').textContent='Update';
+    document.getElementById('cost-f-name').value=e.name;
+    document.getElementById('cost-f-oil').value=e.oilCost;
+    document.getElementById('cost-f-fix').value=e.fixative;
+    document.getElementById('cost-f-alc').value=e.alcohol;
+    document.getElementById('cost-f-mois').value=e.moisturizer;
+    document.getElementById('cost-f-box').value=e.box||30;
+    document.getElementById('cost-f-label').value=e.label||10;
+    document.getElementById('cost-f-markup').value=e.markup||100;
+    document.getElementById('cost-f-notes').value=e.notes||'';
+    calcCostPreview(); openModal('costing-modal');
+  }
+}
+
+// ── SAVE FUNCTIONS ───────────────────────────────────────────────────────────
+function saveInv(){
+  const batch=document.getElementById('inv-f-batch').value;
+  const name=document.getElementById('inv-f-name').value.trim();
+  const stock=parseInt(document.getElementById('inv-f-stock').value);
+  const minStock=parseInt(document.getElementById('inv-f-minstk').value)||2;
+  const remarks=document.getElementById('inv-f-remarks').value.trim();
+  const errs=[];
+  if(!name) errs.push('Scent name is required.');
+  if(!batch) errs.push('Please select a batch.');
+  if(isNaN(stock)||stock<0) errs.push('Stock must be 0 or greater.');
+  if(errs.length){alert('Please fix the following:\n\n'+errs.map(e=>'• '+e).join('\n'));return;}
+  if(editId){
+    confirmSave('fragrance entry', ()=>{
+      const i=inv.find(x=>x.id===editId);
+      if(i){i.batch=batch;i.name=name;i.stock=stock;i.minStock=minStock;i.remarks=remarks;}
+      save(); render(); closeModal('inv-modal');
+    });
+  } else {
+    inv.push({id:uid(),batch,name,stock,minStock,remarks});
+    save(); render(); closeModal('inv-modal');
+  }
+}
+
+function syncPaymentOnPaid(){
+  const paid=document.getElementById('ord-f-paid')?.value;
+  const pay=document.getElementById('ord-f-payment');
+  const lockEl=document.getElementById('pay-lock');
+  if(pay){
+    if(paid==='Yes'){
+      pay.style.opacity='1';
+      pay.title='';
+      if(pay.value==='N/A') pay.value='Cash';
+      if(lockEl) lockEl.style.display='none';
+    } else {
+      pay.value='N/A';
+      pay.style.opacity='0.5';
+      pay.title='Set Paid to Yes first';
+      if(lockEl) lockEl.style.display='';
+    }
+  }
+}
+
+function validateOrderFields(){
+  const status   = document.getElementById('ord-f-status')?.value;
+  const isDone   = status==='Done';
+  const delSel   = document.getElementById('ord-f-delivered');
+  const paidSel  = document.getElementById('ord-f-paid');
+  const paySel   = document.getElementById('ord-f-payment');
+  const lockEl   = document.getElementById('del-lock');
+  const paidLock = document.getElementById('paid-lock');
+  const isPaid   = paidSel?.value==='Yes';
+
+  // ── Lock Delivered + Paid if status not Done ──
+  if(!isDone){
+    if(delSel&&delSel.value==='Yes')   delSel.value='No';
+    if(paidSel&&paidSel.value==='Yes') paidSel.value='No';
+    if(delSel)  delSel.style.opacity='0.5';
+    if(paidSel) paidSel.style.opacity='0.5';
+    if(lockEl)  lockEl.style.display='';
+    if(paidLock)paidLock.style.display='';
+    // Also reset payment to N/A if not paid
+    if(paySel)  { paySel.value='N/A'; paySel.style.opacity='0.5'; }
+  } else {
+    if(delSel)  delSel.style.opacity='1';
+    if(paidSel) paidSel.style.opacity='1';
+    if(lockEl)  lockEl.style.display='none';
+    if(paidLock)paidLock.style.display='none';
+    // ── Lock Payment if Paid=No ──
+    if(paySel){
+      if(!isPaid){
+        paySel.value='N/A';
+        paySel.style.opacity='0.5';
+        paySel.title='Set Paid to Yes first to select a payment mode';
+      } else {
+        paySel.style.opacity='1';
+        paySel.title='';
+        if(paySel.value==='N/A') paySel.value='Cash'; // auto-suggest Cash
+      }
+    }
+  }
+  // Stock warning when selecting Done
+  const nameVal=document.getElementById('ord-f-name')?.value.trim()||'';
+  const warnEl=document.getElementById('ord-stock-warning');
+  if(isDone&&warnEl&&nameVal){
+    const fragMatch=findFragMatch(nameVal);
+    const fragStock=fragMatch?getStock(fragMatch):0;
+    const botTotal=bottleStock.reduce((a,b)=>a+(+b.stock||0),0);
+    const warns=[];
+    if(fragStock<=0) warns.push('Fragrance "'+nameVal+'" is out of stock.');
+    if(botTotal<=0)  warns.push('No bottle stock available.');
+    if(warns.length){
+      warnEl.innerHTML='⚠ '+warns.join(' | ');
+      warnEl.style.display='block';
+    } else if(fragStock>0&&botTotal>0){
+      warnEl.innerHTML='✓ Stock available — '+fragStock+' fragrance, '+botTotal+' bottles.';
+      warnEl.style.display='block';
+      warnEl.style.background='#D1FAE5';
+      warnEl.style.borderLeftColor='var(--green)';
+      warnEl.style.color='var(--green)';
+    }
+  } else if(warnEl){
+    warnEl.style.display='none';
+    warnEl.style.background='#FEE2E2';
+    warnEl.style.borderLeftColor='var(--red)';
+    warnEl.style.color='var(--red)';
+  }
+}
+
+function findFragMatch(name){
+  const q=name.toLowerCase().trim();
+  return inv.find(i=>{
+    const n=i.name.toLowerCase();
+    return n===q||n.includes(q)||q.includes(n);
+  })||null;
+}
+
+function restoreStocks(orderName){
+  // Restore 1 unit to matching fragrance stock
+  const match = findFragMatch(orderName);
+  if(match){
+    match.stock = getStock(match) + 1;
+    delete match.oil; delete match.bottles;
+  } else {
+    console.warn('restoreStocks: no fragrance match for', orderName);
+  }
+  // Restore 1 bottle — use first bottle type (same one that was deducted)
+  const bot = bottleStock[0];
+  if(bot){
+    bot.stock     = (+bot.stock||0) + 1;
+    bot.totalUsed = Math.max(0, (+bot.totalUsed||0) - 1);
+  } else {
+    console.warn('restoreStocks: no bottle stock entry found');
+  }
+}
+
+function saveOrder(){
+  const name      = document.getElementById('ord-f-name').value.trim();
+  const customer  = document.getElementById('ord-f-customer').value.trim();
+  const price     = +document.getElementById('ord-f-price').value||0;
+  const date      = document.getElementById('ord-f-date').value;
+  const status    = document.getElementById('ord-f-status').value;
+  const delivered = document.getElementById('ord-f-delivered').value;
+  const paid      = document.getElementById('ord-f-paid').value;
+  const payment   = document.getElementById('ord-f-payment').value;
+
+  // ── Field validation ──────────────────────────────────────────────────
+  const errs=[];
+  if(!name)     errs.push('Fragrance name is required.');
+  if(!customer) errs.push('Customer name is required.');
+  if(!price||price<=0) errs.push('Price must be greater than 0.');
+  if(!date)     errs.push('Order date is required.');
+  if(delivered==='Yes'&&status!=='Done') errs.push('Delivery can only be Yes when status is Done.');
+  if(paid==='Yes'&&status!=='Done')      errs.push('Payment can only be Yes when status is Done.');
+  if(payment!=='N/A'&&paid!=='Yes')      errs.push('Mode of Payment can only be set when Paid is Yes.');
+  if(errs.length){ alert('Please fix the following:\n\n'+errs.map(e=>'• '+e).join('\n')); return; }
+
+  // ── Stock validation when marking Done ───────────────────────────────
+  const prevOrder  = editId ? orders.find(x=>x.id===editId) : null;
+  const wasDone    = prevOrder?.status==='Done';
+  const wasDeducted= prevOrder?.stockDeducted===true;
+
+  if(status==='Done' && !wasDeducted){
+    const fragMatch = findFragMatch(name);
+    const fragStock = fragMatch ? getStock(fragMatch) : 0;
+    const botTotal  = bottleStock.reduce((a,b)=>a+(+b.stock||0),0);
+    const stockErrs=[];
+    if(fragStock<=0) stockErrs.push(`"${name}" is out of stock in Fragrance Inventory. Please restock first.`);
+    if(botTotal<=0)  stockErrs.push('No bottle stock available. Please add bottles in Bottle Inventory first.');
+    if(stockErrs.length){
+      alert('Cannot mark as Done:\n\n'+stockErrs.map(e=>'• '+e).join('\n'));
+      return;
+    }
+  }
+
+  // ── Confirmation if reverting from Done → Pending/other ──────────────
+  if(wasDone && status!=='Done' && wasDeducted){
+    const confirmed=confirm(
+      'You are changing this order from Done to "'+status+'".'+'\n\n'+
+      'This will RESTORE 1 bottle to Bottle Inventory and 1 unit back to the fragrance stock.'+'\n\n'+
+      'Continue?'
+    );
+    if(!confirmed) return;
+  }
+
+  // ── Build order object ────────────────────────────────────────────────
+  const e={
+    id:editId||uid(),
+    num:+document.getElementById('ord-f-num').value||0,
+    batch:document.getElementById('ord-f-batch').value,
+    name, price, gender:document.getElementById('ord-f-gender').value,
+    customer, date, status, delivered, paid, payment,
+    stockDeducted: wasDeducted // carry forward
+  };
+
+  // ── Apply stock changes ───────────────────────────────────────────────
+  if(status==='Done' && !wasDeducted){
+    deductOnDone(name, false);
+    e.stockDeducted=true;
+  } else if(wasDone && status!=='Done' && wasDeducted){
+    restoreStocks(name);
+    e.stockDeducted=false;
+  }
+
+  // ── Save ──────────────────────────────────────────────────────────────
+  const doSaveOrder = () => {
+    if(editId){
+      const idx=orders.findIndex(x=>x.id===editId);
+      if(idx>-1) orders[idx]=e;
+    } else {
+      orders.push(e);
+    }
+    save(); render(); closeModal('orders-modal');
+  };
+  if(editId){
+    const prevStatus = orders.find(x=>x.id===editId)?.status||'';
+    if(prevStatus==='Done'){
+      // Already showed confirmation in openEdit — save directly
+      doSaveOrder();
+    } else {
+      confirmSave('order', doSaveOrder);
+    }
+  } else {
+    doSaveOrder();
+  }
+}
+
+function savePurchase(){
+  const qty=+document.getElementById('pur-f-qty').value||0;
+  const price=+document.getElementById('pur-f-price').value||0;
+  const item=document.getElementById('pur-f-item').value.trim();
+  const batch=document.getElementById('pur-f-batch').value;
+  const errs=[];
+  if(!item) errs.push('Item name is required.');
+  if(!batch) errs.push('Please select a batch.');
+  if(qty<=0) errs.push('Quantity must be greater than 0.');
+  if(price<=0) errs.push('Price per unit must be greater than 0.');
+  if(errs.length){alert('Please fix the following:\n\n'+errs.map(e=>'• '+e).join('\n'));return;}
+  const e={id:editId||uid(),batch,item,qty,price,total:qty*price};
+  if(editId){
+    confirmSave('purchase record', ()=>{
+      const idx=purchases.findIndex(x=>x.id===editId);
+      if(idx>-1) purchases[idx]=e;
+      save(); render(); closeModal('purchases-modal');
+    });
+  } else {
+    purchases.push(e);
+    save(); render(); closeModal('purchases-modal');
+  }
+}
+
+function saveBatch(){
+  const name=document.getElementById('batch-f-name').value.trim().toUpperCase();
+  if(!name){alert('Enter a batch name.');return;}
+  if(batches.includes(name)){alert('Batch already exists.');return;}
+  batches.push(name); save(); renderBatches(); closeModal('batch-modal');
+}
+
+// ── DELETE ───────────────────────────────────────────────────────────────────
+function delItemLegacy(tab,id){
+  const maps={inv,orders,purchases};
+  const arr=maps[tab];
+  const item=arr.find(x=>x.id===id);
+  const label=tab==='inv'?item?.name:tab==='orders'?item?.name:item?.item;
+  document.getElementById('confirm-title').textContent='Delete this entry?';
+  document.getElementById('confirm-body').textContent=`Remove "${label}" from ${tab}? This cannot be undone.`;
+  document.getElementById('confirm-ok').onclick=()=>{
+    maps[tab]=maps[tab].filter(x=>x.id!==id);
+    if(tab==='inv') inv=maps.inv;
+    else if(tab==='orders') orders=maps.orders;
+    else purchases=maps.purchases;
+    const sbKey = tab==='inv'?'inv':tab==='orders'?'orders':'purchases';
+    sbDelete(sbKey,id);
+    save(); render(); closeModal('confirm-modal');
+  };
+  openModal('confirm-modal');
+}
+
+function confirmClear(){
+  document.getElementById('confirm-title').textContent='Reset All Data?';
+  document.getElementById('confirm-body').textContent='This will permanently delete ALL inventory, orders, and purchase records and reload the original data from your Excel import. This cannot be undone.';
+  document.getElementById('confirm-ok').onclick=async()=>{
+    try{
+      showSaveStatus('saving','Clearing database...');
+      // Wipe every row in every table (id is never empty string, so this matches all rows)
+      await Promise.all([
+        sb.from('inventory').delete().neq('id',''),
+        sb.from('bottle_stock').delete().neq('id',''),
+        sb.from('orders').delete().neq('id',''),
+        sb.from('purchases').delete().neq('id',''),
+        sb.from('batches').delete().neq('name',''),
+        sb.from('catalogue').delete().neq('id',''),
+        sb.from('costing').delete().neq('id',''),
+      ]);
+      inv=JSON.parse(JSON.stringify(SEED_INVENTORY));
+      orders=JSON.parse(JSON.stringify(SEED_ORDERS));
+      purchases=JSON.parse(JSON.stringify(SEED_PURCHASES));
+      batches=JSON.parse(JSON.stringify(SEED_BATCHES));
+      catalogue=JSON.parse(JSON.stringify(SEED_CATALOGUE));
+      costing=JSON.parse(JSON.stringify(SEED_COSTING));
+      bottleStock=JSON.parse(JSON.stringify(SEED_BOTTLE_STOCK));
+      await doSave();
+      render(); closeModal('confirm-modal');
+    }catch(e){
+      showSaveStatus('error','Clear failed: '+e.message);
+      alert('Could not clear data: '+e.message);
+    }
+  };
+  openModal('confirm-modal');
+}
+
+// ── CALC HELPERS ─────────────────────────────────────────────────────────────
+function calcPurTotal(){
+  const qty=parseFloat(document.getElementById('pur-f-qty').value)||0;
+  const price=parseFloat(document.getElementById('pur-f-price').value)||0;
+  const el=document.getElementById('pur-total-preview');
+  el.textContent='₱'+(qty*price).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+// ── MODAL HELPERS ─────────────────────────────────────────────────────────────
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');}));
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape')document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open'));
+});
+
+// ── EXPORT EXCEL — saves to connected file AND offers download ────────────
+async function exportExcel(){
+  const buf=buildWorkbook();
+  XLSX.writeFile(XLSX.read(buf,{type:'array'}),'TSG_Database_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+// ── IMPORT EXCEL ─────────────────────────────────────────────────────────────
+async function importExcel(input){
+  const file=input.files[0]; if(!file) return;
+  const proceed = confirm(
+    'IMPORT WILL REPLACE ALL CURRENT DATA.\n\n'+
+    'This is a full restore, not a merge — everything currently in the database '+
+    '(Inventory, Bottle Stock, Orders, Purchases, Batches, Catalogue, Costing) will be '+
+    'deleted and replaced with what\'s in this Excel file.\n\n'+
+    'Use this only to restore from a backup. Continue?'
+  );
+  if(!proceed){ input.value=''; return; }
+
+  const reader=new FileReader();
+  reader.onload=async function(e){
+    try{
+      const wb=XLSX.read(e.target.result,{type:'binary'});
+      const sheetRows=(name)=>{
+        const s=wb.Sheets[name];
+        return s ? XLSX.utils.sheet_to_json(s,{header:1}).slice(1) : [];
+      };
+
+      const newInv = sheetRows('Inventory').filter(r=>r[0]&&r[1]).map((r,i)=>({
+        id:'imp'+Date.now()+'i'+i, batch:String(r[0]||''), name:String(r[1]||''),
+        stock:+r[2]||0, minStock:+r[3]||2, remarks:String(r[4]||'')
+      }));
+      const newBottles = sheetRows('BottleStock').filter(r=>r[0]).map((r,i)=>({
+        id:'imp'+Date.now()+'b'+i, name:String(r[0]||''), size:String(r[1]||'5ml'),
+        stock:+r[2]||0, totalAdded:+r[3]||0, totalUsed:+r[4]||0, notes:String(r[5]||'')
+      }));
+      const newOrders = sheetRows('Orders').filter(r=>r[1]).map((r,i)=>({
+        id:'imp'+Date.now()+'o'+i, num:+r[0]||0, name:String(r[1]||''), price:+r[2]||0,
+        customer:String(r[3]||''), gender:String(r[4]||''), date:String(r[5]||''),
+        status:String(r[6]||'Pending').trim(), batch:String(r[7]||'').trim(),
+        delivered:String(r[8]||'No').trim(), paid:String(r[9]||'No').trim(),
+        payment:String(r[10]||'N/A').trim(),
+        stockDeducted:String(r[11]||'').trim().toUpperCase()==='YES'||(r[11]===undefined&&String(r[6]||'')==='Done')
+      }));
+      const newPurchases = sheetRows('Purchases').filter(r=>r[0]&&r[1]).map((r,i)=>({
+        id:'imp'+Date.now()+'p'+i, batch:String(r[0]||''), item:String(r[1]||''),
+        qty:+r[2]||1, price:+r[3]||0, total:+r[4]||0
+      }));
+      const newBatches = sheetRows('Batches').filter(r=>r[0]).map(r=>String(r[0]).trim().toUpperCase());
+      const newCatalogue = sheetRows('Catalogue').filter(r=>r[2]).map((r,i)=>({
+        id:'imp'+Date.now()+'c'+i, grade:String(r[0]||''), gender:String(r[1]||''),
+        name:String(r[2]||'').trim(), inspired:String(r[3]||'').trim(),
+        price:+r[4]||0, supplier:String(r[5]||''), status:String(r[6]||'Active')
+      }));
+      const newCosting = sheetRows('Costing').filter(r=>r[0]).map((r,i)=>({
+        id:'imp'+Date.now()+'cost'+i, name:String(r[0]||'').trim(),
+        oilCost:+r[1]||0, fixative:+r[2]||0, alcohol:+r[3]||0, moisturizer:+r[4]||0,
+        box:+r[5]||30, label:+r[6]||10, markup:+r[7]||100, notes:String(r[8]||'')
+      }));
+
+      showSaveStatus('saving','Restoring from backup...');
+      // True full replace: wipe every table in Supabase first so rows absent
+      // from this file don't linger, then write the imported data in.
+      await Promise.all([
+        sb.from('inventory').delete().neq('id',''),
+        sb.from('bottle_stock').delete().neq('id',''),
+        sb.from('orders').delete().neq('id',''),
+        sb.from('purchases').delete().neq('id',''),
+        sb.from('batches').delete().neq('name',''),
+        sb.from('catalogue').delete().neq('id',''),
+        sb.from('costing').delete().neq('id',''),
+      ]);
+
+      inv=newInv; bottleStock=newBottles; orders=newOrders; purchases=newPurchases;
+      batches=newBatches; catalogue=newCatalogue; costing=newCosting;
+
+      await doSave();
+      render();
+      alert('Restore complete!\n\n'+inv.length+' inventory, '+bottleStock.length+' bottle types, '+
+        orders.length+' orders, '+purchases.length+' purchases, '+batches.length+' batches, '+
+        catalogue.length+' catalogue entries, '+costing.length+' costing records loaded.');
+    }catch(err){
+      showSaveStatus('error','Restore failed');
+      alert('Import error: '+err.message);
+    }
+    input.value='';
+  };
+  reader.readAsBinaryString(file);
+}
+
+// ── CATALOGUE RENDER ────────────────────────────────────────────────────────
+function renderCatalogue(){
+  const search=document.getElementById('tb-search').value.toLowerCase();
+  let data=catalogue.filter(c=>c.name.toLowerCase().includes(search)||c.inspired.toLowerCase().includes(search)||(c.gender||'').toLowerCase().includes(search)||(c.grade||'').toLowerCase().includes(search));
+  const ss=sortState.catalogue;
+  data.sort((a,b)=>{let av=a[ss.k],bv=b[ss.k];return typeof av==='string'?av.localeCompare(bv)*ss.d:(av-bv)*ss.d;});
+  const gradeColors={Everyday:'badge-dark',Premium:'badge-blue',Luxury:'badge-green',Clearance:'badge-orange'};
+  document.getElementById('catalogue-stats').innerHTML=`
+    <div class="stat-card"><div class="stat-lbl">Total Fragrances</div><div class="stat-val">${catalogue.length}</div><div class="stat-sub">In catalogue</div></div>
+    <div class="stat-card green"><div class="stat-lbl">Luxury (₱375)</div><div class="stat-val">${catalogue.filter(c=>c.grade==='Luxury').length}</div></div>
+    <div class="stat-card blue"><div class="stat-lbl">Premium (₱350)</div><div class="stat-val">${catalogue.filter(c=>c.grade==='Premium').length}</div></div>
+    <div class="stat-card"><div class="stat-lbl">Everyday (₱325)</div><div class="stat-val">${catalogue.filter(c=>c.grade==='Everyday').length}</div></div>
+    <div class="stat-card orange"><div class="stat-lbl">Clearance (₱300)</div><div class="stat-val">${catalogue.filter(c=>c.grade==='Clearance').length}</div></div>`;
+  const tbody=document.getElementById('catalogue-body');
+  if(!data.length){tbody.innerHTML=`<tr><td colspan="8" class="empty-state"><p>No fragrances found.</p></td></tr>`;return;}
+  tbody.innerHTML=data.map(c=>`<tr>
+    <td><span class="badge ${gradeColors[c.grade]||'badge-dark'}">${esc(c.grade)}</span></td>
+    <td><span style="font-size:11px;color:var(--gray)">${esc(c.gender)}</span></td>
+    <td><strong>${esc(c.name)}</strong></td>
+    <td style="color:var(--gray);font-size:12px">${esc(c.inspired)}</td>
+    <td class="r" style="font-family:var(--serif);font-size:15px;font-weight:600">${fmt(c.price)}</td>
+    <td style="font-size:12px;color:var(--gray)">${esc(c.supplier)}</td>
+    <td><span class="badge ${c.status==='Active'?'badge-green':'badge-orange'}">${esc(c.status)}</span></td>
+    <td class="c no-print">
+      <button class="act-btn" onclick="openEdit('catalogue','${c.id}')">&#9998;</button>
+      <button class="act-btn" onclick="delItem('catalogue','${c.id}')">&#10005;</button>
+    </td></tr>`).join('');
+}
+
+// ── COSTING RENDER ───────────────────────────────────────────────────────────
+function calcCostTotal(e){
+  const total=(+e.oilCost||0)+(+e.fixative||0)+(+e.alcohol||0)+(+e.moisturizer||0)+(+e.box||0)+(+e.label||0);
+  const markup=(+e.markup||100)/100;
+  const sellPrice=total*(1+markup);
+  const profit=sellPrice-total;
+  return{total,sellPrice,profit};
+}
+function renderCosting(){
+  const search=document.getElementById('tb-search').value.toLowerCase();
+  let data=costing.filter(c=>c.name.toLowerCase().includes(search));
+  const ss=sortState.costing;
+  data.sort((a,b)=>{
+    let av=ss.k==='totalCost'?calcCostTotal(a).total:a[ss.k];
+    let bv=ss.k==='totalCost'?calcCostTotal(b).total:b[ss.k];
+    return typeof av==='string'?av.localeCompare(bv)*ss.d:(av-bv)*ss.d;
+  });
+  const avgProfit=costing.length?costing.reduce((a,c)=>a+calcCostTotal(c).profit,0)/costing.length:0;
+  const avgCost=costing.length?costing.reduce((a,c)=>a+calcCostTotal(c).total,0)/costing.length:0;
+  document.getElementById('costing-stats').innerHTML=`
+    <div class="stat-card"><div class="stat-lbl">Costing Records</div><div class="stat-val">${costing.length}</div></div>
+    <div class="stat-card red"><div class="stat-lbl">Avg Cost/Bottle</div><div class="stat-val" style="font-size:22px">${fmt(avgCost)}</div></div>
+    <div class="stat-card green"><div class="stat-lbl">Avg Profit/Bottle</div><div class="stat-val" style="font-size:22px">${fmt(avgProfit)}</div></div>
+    <div class="stat-card"><div class="stat-lbl">Standard Markup</div><div class="stat-val">100%</div><div class="stat-sub">Cost × 2 = Price</div></div>
+    <div class="stat-card gold" style="border-left-color:var(--gold)"><div class="stat-lbl">Formula</div><div class="stat-val" style="font-size:13px;font-family:var(--sans);line-height:1.4">Oil+Fix+Alc<br/>+Mois+Box+Lbl</div></div>`;
+  const tbody=document.getElementById('costing-body');
+  if(!data.length){tbody.innerHTML=`<tr><td colspan="12" class="empty-state"><p>No costing records. Add one to track your costs.</p></td></tr>`;return;}
+  tbody.innerHTML=data.map(c=>{
+    const{total,sellPrice,profit}=calcCostTotal(c);
+    return`<tr>
+      <td><strong>${esc(c.name)}</strong>${c.notes?`<div style="font-size:11px;color:var(--lgray)">${esc(c.notes)}</div>`:''}
+      </td>
+      <td class="r">${fmt(c.oilCost)}</td>
+      <td class="r" style="color:var(--gray)">${fmt(c.fixative)}</td>
+      <td class="r" style="color:var(--gray)">${fmt(c.alcohol)}</td>
+      <td class="r" style="color:var(--gray)">${fmt(c.moisturizer)}</td>
+      <td class="r" style="color:var(--gray)">${fmt(c.box||30)}</td>
+      <td class="r" style="color:var(--gray)">${fmt(c.label||10)}</td>
+      <td class="r" style="font-weight:700;color:var(--accent)">${fmt(total)}</td>
+      <td class="r" style="color:var(--gold)">${c.markup||100}%</td>
+      <td class="r" style="font-family:var(--serif);font-size:15px;font-weight:600">${fmt(sellPrice)}</td>
+      <td class="r" style="font-family:var(--serif);font-size:15px;font-weight:600;color:var(--green)">${fmt(profit)}</td>
+      <td class="c no-print">
+        <button class="act-btn" onclick="openEdit('costing','${c.id}')">&#9998;</button>
+        <button class="act-btn" onclick="delItem('costing','${c.id}')">&#10005;</button>
+      </td></tr>`;
+  }).join('');
+}
+
+// ── CATALOGUE SAVE ────────────────────────────────────────────────────────────
+function saveCatalogue(){
+  const catName=document.getElementById('cat-f-name').value.trim();
+  const catPrice=+document.getElementById('cat-f-price').value||0;
+  const errs=[];
+  if(!catName) errs.push('Fragrance name is required.');
+  if(catPrice<=0) errs.push('Price must be greater than 0.');
+  if(errs.length){alert('Please fix the following:\n\n'+errs.map(e=>'• '+e).join('\n'));return;}
+  const e={id:editId||uid(),grade:document.getElementById('cat-f-grade').value,gender:document.getElementById('cat-f-gender').value,
+    name:catName,inspired:document.getElementById('cat-f-inspired').value.trim(),
+    price:catPrice,supplier:document.getElementById('cat-f-supplier').value,
+    status:document.getElementById('cat-f-status').value};
+  if(editId){
+    confirmSave('catalogue entry', ()=>{
+      const idx=catalogue.findIndex(c=>c.id===editId);
+      if(idx>-1) catalogue[idx]=e;
+      save(); render(); closeModal('catalogue-modal');
+    });
+  } else {
+    catalogue.push(e);
+    save(); render(); closeModal('catalogue-modal');
+  }
+}
+
+// ── COSTING SAVE ──────────────────────────────────────────────────────────────
+function saveCosting(){
+  const costName=document.getElementById('cost-f-name').value.trim();
+  const oilCost=+document.getElementById('cost-f-oil').value||0;
+  const errs=[];
+  if(!costName) errs.push('Fragrance name is required.');
+  if(oilCost<=0) errs.push('Oil cost must be greater than 0.');
+  if(errs.length){alert('Please fix the following:\n\n'+errs.map(e=>'• '+e).join('\n'));return;}
+  const e={id:editId||uid(),name:costName,
+    oilCost,fixative:+document.getElementById('cost-f-fix').value||0,
+    alcohol:+document.getElementById('cost-f-alc').value||0,moisturizer:+document.getElementById('cost-f-mois').value||0,
+    box:+document.getElementById('cost-f-box').value||30,label:+document.getElementById('cost-f-label').value||10,
+    markup:+document.getElementById('cost-f-markup').value||100,notes:document.getElementById('cost-f-notes').value.trim()};
+  if(editId){
+    confirmSave('costing record', ()=>{
+      const idx=costing.findIndex(c=>c.id===editId);
+      if(idx>-1) costing[idx]=e;
+      save(); render(); closeModal('costing-modal');
+    });
+  } else {
+    costing.push(e);
+    save(); render(); closeModal('costing-modal');
+  }
+}
+
+// ── COSTING PREVIEW ───────────────────────────────────────────────────────────
+function calcCostPreview(){
+  const oil=+document.getElementById('cost-f-oil').value||0;
+  const fix=+document.getElementById('cost-f-fix').value||0;
+  const alc=+document.getElementById('cost-f-alc').value||0;
+  const mois=+document.getElementById('cost-f-mois').value||0;
+  const box=+document.getElementById('cost-f-box').value||0;
+  const lbl=+document.getElementById('cost-f-label').value||0;
+  const mu=(+document.getElementById('cost-f-markup').value||100)/100;
+  const total=oil+fix+alc+mois+box+lbl;
+  const sell=total*(1+mu);
+  const profit=sell-total;
+  document.getElementById('cost-preview-text').innerHTML=
+    `<b>Total Cost:</b> ${fmt(total)} &nbsp;|&nbsp; <b>Selling Price:</b> ${fmt(sell)} &nbsp;|&nbsp; <b>Profit:</b> <span style="color:var(--green);font-weight:700">${fmt(profit)}</span>`;
+}
+
+// ── DELETE — updated to handle new tabs ──────────────────────────────────────
+function resetConfirmBtn(){
+  const btn=document.getElementById('confirm-ok');
+  btn.style.background  ='var(--red)';
+  btn.style.borderColor ='var(--red)';
+  btn.style.color       ='white';
+  btn.textContent       ='Delete';
+}
+
+function delItem(tab,id){
+  resetConfirmBtn();
+  if(tab==='bottles'){
+    const e=bottleStock.find(b=>b.id===id);
+    document.getElementById('confirm-title').textContent='Delete Bottle Type?';
+    document.getElementById('confirm-body').textContent=`Remove "${e?.name} (${e?.size})" from bottle inventory? This cannot be undone.`;
+    document.getElementById('confirm-ok').onclick=()=>{
+      bottleStock=bottleStock.filter(b=>b.id!==id);
+      sbDelete('bottleStock',id);
+      save();render();closeModal('confirm-modal');
+    };
+    openModal('confirm-modal'); return;
+  }
+  if(tab==='catalogue'){
+    const e=catalogue.find(c=>c.id===id);
+    document.getElementById('confirm-title').textContent='Remove from Catalogue?';
+    document.getElementById('confirm-body').textContent=`Remove "${e?.name}" from the fragrance catalogue?`;
+    document.getElementById('confirm-ok').onclick=()=>{catalogue=catalogue.filter(c=>c.id!==id);sbDelete('catalogue',id);save();render();closeModal('confirm-modal');};
+    openModal('confirm-modal'); return;
+  }
+  if(tab==='costing'){
+    const e=costing.find(c=>c.id===id);
+    document.getElementById('confirm-title').textContent='Delete Costing Record?';
+    document.getElementById('confirm-body').textContent=`Delete costing record for "${e?.name}"?`;
+    document.getElementById('confirm-ok').onclick=()=>{costing=costing.filter(c=>c.id!==id);sbDelete('costing',id);save();render();closeModal('confirm-modal');};
+    openModal('confirm-modal'); return;
+  }
+  delItemLegacy(tab,id);
+}
+
+// ── CATALOGUE DROPDOWN IN ORDERS MODAL ───────────────────────────────────────
+function showCatalogueDropdown(){
+  filterCatalogueDropdown();
+  document.getElementById('catalogue-dropdown').style.display='block';
+}
+function hideCatalogueDropdown(){
+  document.getElementById('catalogue-dropdown').style.display='none';
+}
+function filterCatalogueDropdown(){
+  const q=document.getElementById('ord-f-name').value.toLowerCase();
+  const dd=document.getElementById('catalogue-dropdown');
+  const matches=catalogue.filter(c=>!q||c.name.toLowerCase().includes(q)||c.inspired.toLowerCase().includes(q));
+  if(!matches.length){dd.innerHTML='<div style="padding:10px 14px;font-size:12px;color:var(--lgray)">No matches — type to enter custom name</div>';dd.style.display='block';return;}
+  dd.innerHTML=matches.slice(0,12).map(c=>`
+    <div onclick="selectCatalogueItem('${c.id}')" style="padding:9px 14px;cursor:pointer;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center"
+      onmouseover="this.style.background='#FFF6F0'" onmouseout="this.style.background=''">
+      <div>
+        <div style="font-size:13px;font-weight:500;color:var(--dark)">${esc(c.name)}</div>
+        <div style="font-size:11px;color:var(--lgray)">${esc(c.inspired)} &middot; ${esc(c.gender)}</div>
+      </div>
+      <div style="font-family:var(--serif);font-size:15px;font-weight:600;color:var(--dark);margin-left:12px">${fmt(c.price)}</div>
+    </div>`).join('');
+  dd.style.display='block';
+}
+function selectCatalogueItem(id){
+  const c=catalogue.find(x=>x.id===id); if(!c) return;
+  document.getElementById('ord-f-name').value=c.name;
+  document.getElementById('ord-f-price').value=c.price;
+  document.getElementById('ord-f-gender').value=c.gender==='Male'?'M':c.gender==='Female'?'F':'U';
+  const hint=document.getElementById('ord-price-hint');
+  hint.style.display='block';
+  hint.innerHTML=`&#9679; Auto-filled from catalogue: <strong>${esc(c.name)}</strong> &mdash; ${esc(c.grade)} &middot; ${fmt(c.price)}`;
+  hideCatalogueDropdown();
+}
+
+// ── BOTTLE INVENTORY ──────────────────────────────────────────────────────────
+function renderBottles(){
+  const search = document.getElementById('tb-search').value.toLowerCase();
+  const batch  = document.getElementById('tb-batch-filter').value; // not used for bottles but keep compat
+  let data = bottleStock.filter(b =>
+    b.name.toLowerCase().includes(search) || b.size.toLowerCase().includes(search)
+  );
+  const ss = sortState.bottles;
+  data.sort((a,b)=>{
+    let av=a[ss.k], bv=b[ss.k];
+    return typeof av==='string'?av.localeCompare(bv)*ss.d:(av-bv)*ss.d;
+  });
+  const totalStock = bottleStock.reduce((a,b)=>a+(+b.stock||0),0);
+  const totalAdded = bottleStock.reduce((a,b)=>a+(+b.totalAdded||0),0);
+  const totalUsed  = bottleStock.reduce((a,b)=>a+(+b.totalUsed||0),0);
+  const lowCnt     = bottleStock.filter(b=>(+b.stock||0)<=5&&(+b.stock||0)>0).length;
+  document.getElementById('bottles-stats').innerHTML=`
+    <div class="stat-card"><div class="stat-lbl">Bottle Types</div><div class="stat-val">${bottleStock.length}</div><div class="stat-sub">Size variants tracked</div></div>
+    <div class="stat-card green"><div class="stat-lbl">Total Stock</div><div class="stat-val">${totalStock}</div><div class="stat-sub">Bottles available</div></div>
+    <div class="stat-card"><div class="stat-lbl">Total Added</div><div class="stat-val">${totalAdded}</div><div class="stat-sub">Cumulative restocks</div></div>
+    <div class="stat-card red"><div class="stat-lbl">Total Used</div><div class="stat-val">${totalUsed}</div><div class="stat-sub">From done orders</div></div>
+    <div class="stat-card orange"><div class="stat-lbl">Low Stock</div><div class="stat-val">${lowCnt}</div><div class="stat-sub">5 or fewer left</div></div>`;
+  const tbody = document.getElementById('bottles-body');
+  if(!data.length){tbody.innerHTML=`<tr><td colspan="7" class="empty-state"><p>No bottle types yet. Add one above.</p></td></tr>`;return;}
+  tbody.innerHTML = data.map(b=>{
+    const s=+b.stock||0;
+    const rc=s===0?'row-out':s<=5?'row-low':'';
+    const vc=s===0?'rem-out':s<=5?'rem-low':'rem-ok';
+    return `<tr class="${rc}">
+      <td><strong>${esc(b.name)}</strong></td>
+      <td class="c"><span class="badge badge-dark">${esc(b.size)}</span></td>
+      <td class="c"><span class="${vc}" style="font-family:var(--serif);font-size:22px;font-weight:600">${s}</span></td>
+      <td class="c" style="color:var(--gray)">${+b.totalAdded||0}</td>
+      <td class="c" style="color:var(--gray)">${+b.totalUsed||0}</td>
+      <td style="color:var(--gray);font-size:12px;font-style:italic">${esc(b.notes||'')}</td>
+      <td class="c no-print" style="white-space:nowrap">
+        <button class="act-btn" title="Add Stock" onclick="openBottleRestock('${b.id}')" style="color:var(--green);font-size:14px">&#43;</button>
+        <button class="act-btn" title="Edit" onclick="openEdit('bottles','${b.id}')">&#9998;</button>
+        <button class="act-btn" title="Delete" onclick="delItem('bottles','${b.id}')">&#10005;</button>
+      </td></tr>`;
+  }).join('');
+}
+
+function saveBottle(){
+  const name  = document.getElementById('bot-f-name').value.trim();
+  const size  = document.getElementById('bot-f-size').value;
+  const stock = parseInt(document.getElementById('bot-f-stock').value);
+  const notes = document.getElementById('bot-f-notes').value.trim();
+  const errs=[];
+  if(!name) errs.push('Bottle type name is required.');
+  if(isNaN(stock)||stock<0) errs.push('Initial stock must be 0 or greater.');
+  if(errs.length){alert('Please fix the following:\n\n'+errs.map(e=>'• '+e).join('\n'));return;}
+  if(editId){
+    confirmSave('bottle entry', ()=>{
+      const b=bottleStock.find(x=>x.id===editId);
+      if(b){b.name=name;b.size=size;b.stock=stock;b.notes=notes;}
+      save(); render(); closeModal('bottles-modal');
+    });
+  } else {
+    bottleStock.push({id:uid(),name,size,stock,totalAdded:stock,totalUsed:0,notes});
+    save(); render(); closeModal('bottles-modal');
+  }
+}
+
+// Bottle restock (add more stock)
+let restockTargetId = null;
+function openBottleRestock(id){
+  restockTargetId = id;
+  const b = bottleStock.find(x=>x.id===id);
+  document.getElementById('restock-target-info').innerHTML =
+    `<strong>${esc(b.name)}</strong> &mdash; ${esc(b.size)}<br/>Current stock: <strong>${b.stock}</strong>`;
+  document.getElementById('restock-qty').value = '50';
+  openModal('restock-modal');
+  setTimeout(()=>document.getElementById('restock-qty').focus(),80);
+}
+function confirmRestock(){
+  const qty = parseInt(document.getElementById('restock-qty').value)||0;
+  if(qty<=0){alert('Please enter a quantity greater than 0.');return;}
+  const b = bottleStock.find(x=>x.id===restockTargetId);
+  if(b){
+    b.stock = (b.stock||0) + qty;
+    b.totalAdded = (b.totalAdded||0) + qty;
+  }
+  save(); render(); closeModal('restock-modal');
+}
+
+// Fragrance restock (set stock directly)
+let fragRestockId = null;
+function openFragRestock(id){
+  fragRestockId = id;
+  const i = inv.find(x=>x.id===id);
+  const currentStock = getStock(i);
+  document.getElementById('frag-restock-info').innerHTML =
+    `<strong>${esc(i.name)}</strong> <span class="badge badge-dark" style="margin-left:6px">${esc(i.batch)}</span><br/>
+     Current stock: <strong style="font-size:18px;font-family:var(--serif)">${currentStock}</strong>`;
+  document.getElementById('frag-restock-qty').value = currentStock;
+  document.getElementById('frag-min-stock').value = i.minStock||2;
+  openModal('frag-restock-modal');
+  setTimeout(()=>document.getElementById('frag-restock-qty').focus(),80);
+}
+function confirmFragRestock(){
+  const newStock = parseInt(document.getElementById('frag-restock-qty').value);
+  const minStock = parseInt(document.getElementById('frag-min-stock').value)||2;
+  if(isNaN(newStock)||newStock<0){alert('Please enter a valid stock number (0 or more).');return;}
+  const i = inv.find(x=>x.id===fragRestockId);
+  if(i){
+    i.stock    = newStock;
+    i.minStock = minStock;
+    // Clear legacy formula fields so new stock takes precedence
+    delete i.oil; delete i.bottles;
+  }
+  save(); render(); closeModal('frag-restock-modal');
+}
+
+// Bulk restock
+function openBulkRestock(){
+  const listEl = document.getElementById('bulk-restock-list');
+  listEl.innerHTML = inv.map(i=>{
+    const s = getStock(i);
+    const color = s===0?'var(--red)':s<=(i.minStock||2)?'var(--orange)':'var(--green)';
+    return `<div style="display:grid;grid-template-columns:1fr 80px 80px;gap:8px;align-items:center;padding:8px 4px;border-bottom:1px solid var(--line)">
+      <div style="font-size:13px"><strong>${esc(i.name)}</strong> <span style="font-size:11px;color:var(--lgray)">${esc(i.batch)}</span>
+        <span style="color:${color};font-size:12px;font-weight:600;margin-left:8px">${s} left</span></div>
+      <input type="number" min="0" placeholder="New qty"
+        data-inv-id="${i.id}" class="bulk-restock-input"
+        style="border:1px solid var(--line);padding:6px 8px;font-size:13px;width:100%;outline:none"/>
+      <input type="number" min="0" value="${i.minStock||2}" placeholder="Min"
+        data-min-id="${i.id}" class="bulk-min-input"
+        style="border:1px solid var(--line);padding:6px 8px;font-size:13px;width:100%;outline:none;color:var(--lgray)"/>
+    </div>`;
+  }).join('');
+  openModal('bulk-restock-modal');
+}
+function saveBulkRestock(){
+  let changed = 0;
+  document.querySelectorAll('.bulk-restock-input').forEach(input=>{
+    const val = input.value.trim();
+    if(val===''||val===null) return;
+    const qty = parseInt(val);
+    if(isNaN(qty)||qty<0) return;
+    const id = input.dataset.invId;
+    const item = inv.find(x=>x.id===id);
+    if(item){ item.stock=qty; delete item.oil; delete item.bottles; changed++; }
+  });
+  document.querySelectorAll('.bulk-min-input').forEach(input=>{
+    const id = input.dataset.minId;
+    const item = inv.find(x=>x.id===id);
+    if(item) item.minStock = parseInt(input.value)||2;
+  });
+  save(); render(); closeModal('bulk-restock-modal');
+  if(changed>0) alert(changed+' fragrance stock levels updated.');
+}
+
+// ── AUTO-DEDUCT ON ORDER DONE ──────────────────────────────────────────────
+function deductOnDone(orderName){
+  // Deduct 1 from matching fragrance stock
+  const match = findFragMatch(orderName);
+  if(match){
+    match.stock = Math.max(0, getStock(match) - 1);
+    delete match.oil; delete match.bottles;
+  }
+  // Deduct 1 bottle from first available bottle stock
+  const bot = bottleStock.find(b => (+b.stock||0) > 0) || bottleStock[0];
+  if(bot){
+    bot.stock     = Math.max(0, (+bot.stock||0) - 1);
+    bot.totalUsed = (+bot.totalUsed||0) + 1;
+  }
+}
+
+// ── BOTTLE DELETE ─────────────────────────────────────────────────────────
+// (handled in the extended delItem below)
+
+// ── CONFIRM SAVE HELPER ──────────────────────────────────────────────────────
+// Shows confirm modal before applying an edit. Calls callback if confirmed.
+function confirmSave(label, callback){
+  const btn = document.getElementById('confirm-ok');
+  document.getElementById('confirm-title').textContent = 'Confirm Update';
+  document.getElementById('confirm-body').textContent  =
+    'You are about to update this ' + label + '. Are you sure you want to save these changes?';
+  btn.onclick = () => { closeModal('confirm-modal'); callback(); };
+  btn.style.background   = 'var(--dark)';
+  btn.style.borderColor  = 'var(--dark)';
+  btn.style.color        = 'white';
+  btn.textContent        = 'Yes, Save Changes';
+  openModal('confirm-modal');
+}
+
+// ── FILTER HELPERS ───────────────────────────────────────────────────────────
+function clearOrderFilters(){
+  document.getElementById('tb-batch-filter').value='';
+  document.getElementById('tb-status-filter').value='';
+  document.getElementById('tb-paid-filter').value='';
+  document.getElementById('tb-delivery-filter').value='';
+  document.getElementById('tb-search').value='';
+  render();
+}
+
+function updateFilterChips(){
+  const status=document.getElementById('tb-status-filter').value;
+  const paid=document.getElementById('tb-paid-filter').value;
+  const delivery=document.getElementById('tb-delivery-filter').value;
+  const hasFilter=status||paid||delivery;
+  const chipsBar=document.getElementById('filter-chips');
+  chipsBar.style.display=activeTab==='orders'&&hasFilter?'flex':'none';
+
+  const chipStatus=document.getElementById('chip-status');
+  const chipPaid=document.getElementById('chip-paid');
+  const chipDelivery=document.getElementById('chip-delivery');
+
+  if(status){chipStatus.style.display='';chipStatus.textContent='Status: '+status;}
+  else chipStatus.style.display='none';
+
+  if(paid){chipPaid.style.display='';chipPaid.textContent=paid==='Yes'?'Paid Only':'Unpaid Only';}
+  else chipPaid.style.display='none';
+
+  if(delivery){chipDelivery.style.display='';chipDelivery.textContent=delivery==='Yes'?'Delivered':'Not Delivered';}
+  else chipDelivery.style.display='none';
+}
+
+// ── EXPORT CSV ───────────────────────────────────────────────────────────────
+function exportCSV(){
+  let rows=[], headers=[], tab=activeTab;
+  if(tab==='inv'){
+    headers=['Batch','Scent Name','Qty Oil','Bottles Filled','Remaining','Remarks'];
+    rows=inv.map(i=>[i.batch,i.name,i.oil,i.bottles,rem(i.oil,i.bottles),i.remarks]);
+  } else if(tab==='orders'){
+    headers=['#','Fragrance','Price','Customer','Gender','Date','Status','Batch','Delivered','Paid','Payment'];
+    rows=orders.map(o=>[o.num,o.name,o.price,o.customer,o.gender,o.date,o.status,o.batch,o.delivered,o.paid,o.payment]);
+  } else if(tab==='purchases'){
+    headers=['Batch','Item','Qty','Price/Unit','Total'];
+    rows=purchases.map(p=>[p.batch,p.item,p.qty,p.price,p.total]);
+  }
+  const csv=[headers,...rows].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='TSG_'+tab+'_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+
+// ── INIT (handled by auth startup below) ─────────────────────────────────────
+// ── SECURITY & AUTH ──────────────────────────────────────────────────────────
+const AUTH_KEY   = 'tsg_auth_session';
+const CREDS_KEY  = 'tsg_credentials';
+const SESSION_TIMEOUT_MS = 8 * 60 * 60 * 1000; // 8 hours
+
+// Default credentials (SHA-256 hashed)
+// Default: username=tsgadmin | password=TSG@2026
+const DEFAULT_CREDS = {
+  username: 'tsgadmin',
+  // SHA-256 of 'TSG@2026'
+  passwordHash: 'b94c4d5da7e3c8d04f6a9e5a1b0d7c2e3f8a5b6c9d2e7f0a1b4c5d6e7f8a9b0c'
+};
+
+// Password encoding — works on file://, http://, https://, all browsers
+// btoa is available in every browser since IE10
+const TSG_SALT = 'tsg_scent_gallery_2026';
+function hashPassword(str){
+  // Combine salt + password in a fixed way
+  const combined = TSG_SALT + '::' + str + '::' + str.length;
+  // btoa requires ASCII — use encodeURIComponent to handle any special chars
+  try{
+    return btoa(encodeURIComponent(combined));
+  }catch(e){
+    // If btoa fails for any reason, use a simple numeric hash as last resort
+    let v = 0x12345678;
+    for(let i = 0; i < combined.length; i++){
+      v = ((v << 5) - v + combined.charCodeAt(i)) | 0;
+    }
+    return 'h' + (v >>> 0).toString(36) + combined.length.toString(36);
+  }
+}
+async function sha256(str){ return hashPassword(str); }
+
+function getCreds(){
+  const stored = localStorage.getItem(CREDS_KEY);
+  return stored ? JSON.parse(stored) : DEFAULT_CREDS;
+}
+
+function checkSession(){
+  const session = sessionStorage.getItem(AUTH_KEY);
+  if(!session) return false;
+  const data = JSON.parse(session);
+  if(Date.now() - data.loginTime > SESSION_TIMEOUT_MS){
+    sessionStorage.removeItem(AUTH_KEY);
+    return false;
+  }
+  return data.username;
+}
+
+async function doLogin(){
+  const username = document.getElementById('login-user').value.trim();
+  const password = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
+  if(!username || !password){
+    errEl.style.display='block';
+    errEl.textContent='Please enter both username and password.';
+    return;
+  }
+  try{
+    const hash = await sha256(password);
+    const creds = getCreds();
+    console.log('TSG Login attempt:', username, '| Hash match:', hash === creds.passwordHash);
+    if(username === creds.username && hash === creds.passwordHash){
+      sessionStorage.setItem(AUTH_KEY, JSON.stringify({username, loginTime: Date.now()}));
+      await showApp(username);
+    } else {
+      errEl.style.display = 'block';
+      errEl.textContent = 'Incorrect username or password. Please try again.';
+      document.getElementById('login-pass').value = '';
+      document.getElementById('login-pass').focus();
+    }
+  }catch(err){
+    errEl.style.display='block';
+    errEl.textContent='Login error: '+err.message+'. Please refresh and try again.';
+    console.error('Login error:', err);
+  }
+}
+
+function resetCredentials(){
+  if(!confirm('This will reset your username to "tsgadmin" and password to "TSG@2026". Continue?')) return;
+  localStorage.removeItem(CREDS_KEY);
+  sessionStorage.removeItem(AUTH_KEY);
+  // Re-init to set fresh defaults
+  (async()=>{
+    const hash = await sha256('TSG@2026');
+    localStorage.setItem(CREDS_KEY, JSON.stringify({username:'tsgadmin', passwordHash: hash, _v:'btoa_v2'}));
+    document.getElementById('login-error').style.display='block';
+    document.getElementById('login-error').textContent='Credentials reset. Login with: tsgadmin / TSG@2026';
+    document.getElementById('login-error').style.background='#D1FAE5';
+    document.getElementById('login-error').style.borderLeftColor='var(--green)';
+    document.getElementById('login-error').style.color='var(--green)';
+    document.getElementById('login-user').value='tsgadmin';
+    document.getElementById('login-pass').value='';
+    document.getElementById('login-pass').focus();
+  })();
+}
+
+function doLogout(){
+  if(!confirm('Are you sure you want to sign out?')) return;
+  sessionStorage.removeItem(AUTH_KEY);
+  document.getElementById('app-content').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('login-user').value='';
+  document.getElementById('login-pass').value='';
+  document.getElementById('login-error').style.display='none';
+  setTimeout(()=>document.getElementById('login-user').focus(),100);
+}
+
+async function showApp(username){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('logged-user-tag').textContent='Signed in as ' + username;
+  const badge=document.getElementById('db-file-badge');
+  if(badge){badge.textContent='⏳ Loading...';badge.title='Loading from Supabase';}
+  try{
+    await load();
+    if(badge){badge.textContent='☁ Supabase Connected';badge.title='Live centralized database';}
+    showMainApp();
+  }catch(e){
+    console.error('Load error:',e);
+    if(badge){badge.textContent='⚠ Connection error';}
+    alert('Could not load data from Supabase:\n\n'+e.message+'\n\nCheck your internet connection and that the database tables have been created, then refresh.');
+  }
+}
+
+// ── CHANGE PASSWORD ───────────────────────────────────────────────────────────
+function openChangePwd(){
+  document.getElementById('pwd-current').value='';
+  document.getElementById('pwd-new').value='';
+  document.getElementById('pwd-confirm').value='';
+  document.getElementById('pwd-error').style.display='none';
+  openModal('change-pwd-modal');
+  setTimeout(()=>document.getElementById('pwd-current').focus(),80);
+}
+
+async function saveChangePwd(){
+  const current  = document.getElementById('pwd-current').value;
+  const newPwd   = document.getElementById('pwd-new').value;
+  const confirm  = document.getElementById('pwd-confirm').value;
+  const errEl    = document.getElementById('pwd-error');
+  errEl.style.display='none';
+
+  if(!current||!newPwd||!confirm){ errEl.style.display='block'; errEl.textContent='All fields are required.'; return; }
+  if(newPwd !== confirm){ errEl.style.display='block'; errEl.textContent='New passwords do not match.'; return; }
+  if(newPwd.length < 6){ errEl.style.display='block'; errEl.textContent='Password must be at least 6 characters.'; return; }
+
+  const currentHash = await sha256(current);
+  const creds = getCreds();
+  if(currentHash !== creds.passwordHash){
+    errEl.style.display='block';
+    errEl.textContent='Current password is incorrect.';
+    return;
+  }
+  const newHash = await sha256(newPwd);
+  const newUsername = document.getElementById('pwd-new-username').value.trim() || creds.username;
+  localStorage.setItem(CREDS_KEY, JSON.stringify({username: newUsername, passwordHash: newHash, _v:'btoa_v2'}));
+  closeModal('change-pwd-modal');
+  alert('Password updated successfully. Please sign in again.');
+  doLogout();
+}
+
+// ── STARTUP ───────────────────────────────────────────────────────────────────
+(async function init(){
+  try{
+    const HASH_VERSION = 'btoa_v2'; // bump this if hashPassword() changes
+    const stored = localStorage.getItem(CREDS_KEY);
+    let resetNeeded = true;
+
+    if(stored){
+      try{
+        const parsed = JSON.parse(stored);
+        // Only keep stored credentials if they were saved with current hash version
+        if(parsed._v && parsed._v === HASH_VERSION){
+          resetNeeded = false;
+        }
+      }catch(e){ resetNeeded = true; }
+    }
+
+    if(resetNeeded){
+      // Stored hash is stale or missing — always reset to defaults
+      const hash = await sha256('TSG@2026');
+      localStorage.setItem(CREDS_KEY, JSON.stringify({
+        username:'tsgadmin',
+        passwordHash: hash,
+        _v: HASH_VERSION
+      }));
+      sessionStorage.removeItem(AUTH_KEY); // force re-login
+      console.log('TSG: Credentials reset to defaults (hash version update)');
+    }
+
+    const user = checkSession();
+    if(user){
+      await showApp(user);
+    } else {
+      document.getElementById('login-screen').style.display='flex';
+      setTimeout(()=>document.getElementById('login-user').focus(),150);
+    }
+  }catch(err){
+    console.error('TSG Init error:', err);
+    document.getElementById('login-screen').style.display='flex';
+    const errEl=document.getElementById('login-error');
+    errEl.style.display='block';
+    errEl.textContent='Startup error: '+err.message+' — Try clicking "Forgot password? Reset to default"';
+    setTimeout(()=>document.getElementById('login-user').focus(),150);
+  }
+})();
+</script>
+
+<!-- SAVE INDICATOR -->
+<div id="save-indicator">
+  <div class="save-spinner" id="save-spinner"></div>
+  <span id="save-text">Syncing...</span>
+</div>
+
+<!-- BOTTLE ADD/EDIT MODAL -->
+<div class="modal-overlay" id="bottles-modal">
+  <div class="modal-box">
+    <div class="modal-title" id="bottles-modal-title">Add Bottle Type</div>
+    <div class="mf"><label>Bottle Type Name</label><input id="bot-f-name" placeholder="e.g. Standard Glass Bottle"/></div>
+    <div class="mgrid">
+      <div class="mf"><label>Size</label>
+        <select id="bot-f-size"><option>5ml</option><option>10ml</option><option>Other</option></select>
+      </div>
+      <div class="mf"><label>Initial Stock Count</label>
+        <input type="number" id="bot-f-stock" min="0" value="0" placeholder="e.g. 50"/>
+      </div>
+    </div>
+    <div class="mf"><label>Notes (optional)</label><input id="bot-f-notes" placeholder="e.g. Supplier, batch info"/></div>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" onclick="closeModal('bottles-modal')">Cancel</button>
+      <button class="modal-btn primary" id="bot-save-btn" onclick="saveBottle()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTLE RESTOCK MODAL -->
+<div class="modal-overlay" id="restock-modal">
+  <div class="modal-box">
+    <div class="modal-title">Add Stock</div>
+    <div id="restock-target-info" style="background:var(--offwhite);border-left:4px solid var(--gold);padding:12px 16px;margin-bottom:16px;font-size:13px;color:var(--dark)"></div>
+    <div class="mf"><label>Quantity to Add</label>
+      <input type="number" id="restock-qty" min="1" value="50" placeholder="e.g. 50"/>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" onclick="closeModal('restock-modal')">Cancel</button>
+      <button class="modal-btn primary" onclick="confirmRestock()">Add Stock</button>
+    </div>
+  </div>
+</div>
+
+<!-- FRAGRANCE RESTOCK MODAL -->
+<div class="modal-overlay" id="frag-restock-modal">
+  <div class="modal-box">
+    <div class="modal-title">Update Fragrance Stock</div>
+    <div id="frag-restock-info" style="background:var(--offwhite);border-left:4px solid var(--accent);padding:12px 16px;margin-bottom:16px;font-size:13px"></div>
+    <div class="mgrid">
+      <div class="mf"><label>Set Stock To</label>
+        <input type="number" id="frag-restock-qty" min="0" placeholder="e.g. 10"/>
+      </div>
+      <div class="mf"><label>Min Stock Alert</label>
+        <input type="number" id="frag-min-stock" min="0" value="3" placeholder="e.g. 3"/>
+      </div>
+    </div>
+    <div style="font-size:12px;color:var(--gray);margin-bottom:4px">
+      This directly sets the stock count — no formula. Use this for manual restocks.
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" onclick="closeModal('frag-restock-modal')">Cancel</button>
+      <button class="modal-btn primary" onclick="confirmFragRestock()">Update Stock</button>
+    </div>
+  </div>
+</div>
+
+<!-- CATALOGUE MODAL -->
+<div class="modal-overlay" id="catalogue-modal">
+  <div class="modal-box">
+    <div class="modal-title" id="cat-modal-title">Add to Catalogue</div>
+    <div class="mgrid">
+      <div class="mf"><label>Grade</label>
+        <select id="cat-f-grade"><option>Everyday</option><option>Premium</option><option>Luxury</option><option>Clearance</option></select>
+      </div>
+      <div class="mf"><label>Gender</label>
+        <select id="cat-f-gender"><option>Male</option><option>Female</option><option>Unisex</option></select>
+      </div>
+    </div>
+    <div class="mf"><label>Fragrance Name (Your Label)</label><input id="cat-f-name" placeholder="e.g. Miss Dior"/></div>
+    <div class="mf"><label>Inspired By</label><input id="cat-f-inspired" placeholder="e.g. Dior - Miss Dior Blooming"/></div>
+    <div class="mgrid">
+      <div class="mf"><label>Selling Price (&#8369;)</label><input type="number" id="cat-f-price" min="0" value="350"/></div>
+      <div class="mf"><label>Supplier</label>
+        <select id="cat-f-supplier"><option>GRASSE</option><option>MG</option><option value="">Other</option></select>
+      </div>
+    </div>
+    <div class="mf"><label>Status</label>
+      <select id="cat-f-status"><option>Active</option><option>Clearance</option><option>Inactive</option></select>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" onclick="closeModal('catalogue-modal')">Cancel</button>
+      <button class="modal-btn primary" id="cat-save-btn" onclick="saveCatalogue()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- COSTING MODAL -->
+<div class="modal-overlay" id="costing-modal">
+  <div class="modal-box">
+    <div class="modal-title" id="cost-modal-title">Add Costing Record</div>
+    <div class="mf"><label>Fragrance Name</label><input id="cost-f-name" placeholder="e.g. Baccarat Rouge"/></div>
+    <div style="background:var(--offwhite);border-left:3px solid var(--gold);padding:10px 14px;margin-bottom:14px;font-size:11px;color:var(--gray)">
+      Enter all costs per ml of oil used. Remaining bottles = (Oil x 4) - Bottles Filled.
+    </div>
+    <div class="mgrid">
+      <div class="mf"><label>Oil Cost (&#8369;)</label><input type="number" id="cost-f-oil" min="0" step="0.01" oninput="calcCostPreview()"/></div>
+      <div class="mf"><label>Fixative (&#8369;)</label><input type="number" id="cost-f-fix" min="0" step="0.01" value="50" oninput="calcCostPreview()"/></div>
+      <div class="mf"><label>Alcohol (&#8369;)</label><input type="number" id="cost-f-alc" min="0" step="0.01" value="60" oninput="calcCostPreview()"/></div>
+      <div class="mf"><label>Moisturizer (&#8369;)</label><input type="number" id="cost-f-mois" min="0" step="0.01" value="15" oninput="calcCostPreview()"/></div>
+      <div class="mf"><label>Box &amp; Packaging (&#8369;)</label><input type="number" id="cost-f-box" min="0" step="0.01" value="30" oninput="calcCostPreview()"/></div>
+      <div class="mf"><label>Label / Sticker (&#8369;)</label><input type="number" id="cost-f-label" min="0" step="0.01" value="10" oninput="calcCostPreview()"/></div>
+    </div>
+    <div class="mf"><label>Markup % (e.g. 100 for 100%)</label><input type="number" id="cost-f-markup" min="0" value="100" oninput="calcCostPreview()"/></div>
+    <div class="preview-box">
+      <div class="preview-lbl">Cost and Price Preview</div>
+      <div id="cost-preview-text" style="font-size:13px;color:var(--dark);line-height:1.9">Fill in costs above to preview</div>
+    </div>
+    <div class="mf"><label>Notes (optional)</label><input id="cost-f-notes" placeholder="e.g. Batch 4 pricing"/></div>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" onclick="closeModal('costing-modal')">Cancel</button>
+      <button class="modal-btn primary" id="cost-save-btn" onclick="saveCosting()">Save</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- /app-content -->
+</body>
+</html>
