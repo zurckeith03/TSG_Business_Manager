@@ -437,6 +437,12 @@ body{background:var(--offwhite);font-family:var(--sans);color:var(--dark);min-he
     <option value="Transfer">Transfer</option>
     <option value="N/A">N/A</option>
   </select>
+  <select class="tb-select" id="tb-pur-payment-filter" onchange="render()" style="display:none">
+    <option value="">All Payment Types</option>
+    <option value="Cash">Cash</option>
+    <option value="Gcash">Gcash</option>
+    <option value="Transfer">Transfer</option>
+  </select>
   <select class="tb-select" id="tb-logtype-filter" onchange="render()" style="display:none">
     <option value="">All Activity</option>
     <option value="ADD">Additions Only</option>
@@ -523,6 +529,7 @@ body{background:var(--offwhite);font-family:var(--sans);color:var(--dark);min-he
         <th class="c" onclick="sort('purchases','qty')">Qty</th>
         <th class="r" onclick="sort('purchases','price')">Price/Unit</th>
         <th class="r" onclick="sort('purchases','total')">Total</th>
+        <th class="c" onclick="sort('purchases','payment')">Payment</th>
         <th class="c no-print">Actions</th>
       </tr></thead>
       <tbody id="purchases-body"></tbody>
@@ -744,6 +751,13 @@ body{background:var(--offwhite);font-family:var(--sans);color:var(--dark);min-he
     <div class="mgrid">
       <div class="mf"><label>Quantity</label><input type="number" id="pur-f-qty" min="1" value="1" oninput="calcPurTotal()"/></div>
       <div class="mf"><label>Price per Unit (₱)</label><input type="number" id="pur-f-price" min="0" step="0.01" oninput="calcPurTotal()"/></div>
+    </div>
+    <div class="mf"><label>Type of Payment</label>
+      <select id="pur-f-payment">
+        <option value="Cash">Cash</option>
+        <option value="Gcash">Gcash</option>
+        <option value="Transfer">Transfer</option>
+      </select>
     </div>
     <div class="preview-box"><div class="preview-lbl">Total = Qty × Price</div><span class="preview-val" id="pur-total-preview">—</span></div>
     <div class="modal-actions">
@@ -1070,7 +1084,7 @@ const SB_TABLES = {
   inv:        { table:'inventory',    map:i=>({id:i.id, batch:i.batch, name:i.name, stock:+i.stock||0, min_stock:+i.minStock||2, remarks:i.remarks||''}) },
   bottleStock:{ table:'bottle_stock', map:b=>({id:b.id, name:b.name, size:b.size, stock:+b.stock||0, total_added:+b.totalAdded||0, total_used:+b.totalUsed||0, notes:b.notes||''}) },
   orders:     { table:'orders',       map:o=>({id:o.id, num:+o.num||0, batch:o.batch, name:o.name, price:+o.price||0, gender:o.gender, customer:o.customer, date:o.date||null, status:o.status, delivered:o.delivered, paid:o.paid, payment:o.payment, stock_deducted:!!o.stockDeducted}) },
-  purchases:  { table:'purchases',    map:p=>({id:p.id, batch:p.batch, item:p.item, qty:+p.qty||0, price:+p.price||0, total:+p.total||0}) },
+  purchases:  { table:'purchases',    map:p=>({id:p.id, batch:p.batch, item:p.item, qty:+p.qty||0, price:+p.price||0, total:+p.total||0, payment:p.payment||'Cash'}) },
   catalogue:  { table:'catalogue',    map:c=>({id:c.id, grade:c.grade, gender:c.gender, name:c.name, inspired:c.inspired, price:+c.price||0, supplier:c.supplier, status:c.status}) },
   costing:    { table:'costing',      map:c=>({id:c.id, name:c.name, oil_cost:+c.oilCost||0, fixative:+c.fixative||0, alcohol:+c.alcohol||0, moisturizer:+c.moisturizer||0, box:+c.box||30, label:+c.label||10, markup:+c.markup||100, notes:c.notes||''}) },
   profitEntries:{ table:'profit_entries', map:p=>({id:p.id, date:p.date||null, description:p.description||'', amount:+p.amount||0, notes:p.notes||''}) },
@@ -1139,8 +1153,8 @@ function buildWorkbook(){
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ordRows),'Orders');
 
   // Purchases
-  const purRows=[['Batch','Item Name','Qty','Price/Unit','Total']];
-  purchases.forEach(p=>purRows.push([p.batch,p.item,p.qty,p.price,p.total]));
+  const purRows=[['Batch','Item Name','Qty','Price/Unit','Total','Payment']];
+  purchases.forEach(p=>purRows.push([p.batch,p.item,p.qty,p.price,p.total,p.payment||'Cash']));
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(purRows),'Purchases');
 
   // Batches
@@ -1303,7 +1317,7 @@ async function load(){
   inv = (invR.data||[]).map(r=>({id:r.id,batch:r.batch,name:r.name,stock:r.stock,minStock:r.min_stock,remarks:r.remarks||''}));
   bottleStock = (botR.data||[]).map(r=>({id:r.id,name:r.name,size:r.size,stock:r.stock,totalAdded:r.total_added,totalUsed:r.total_used,notes:r.notes||''}));
   orders = (ordR.data||[]).map(r=>({id:r.id,num:r.num,batch:r.batch,name:r.name,price:r.price,gender:r.gender,customer:r.customer,date:r.date,status:r.status,delivered:r.delivered,paid:r.paid,payment:r.payment,stockDeducted:r.stock_deducted}));
-  purchases = (purR.data||[]).map(r=>({id:r.id,batch:r.batch,item:r.item,qty:r.qty,price:r.price,total:r.total}));
+  purchases = (purR.data||[]).map(r=>({id:r.id,batch:r.batch,item:r.item,qty:r.qty,price:r.price,total:r.total,payment:r.payment||'Cash'}));
   batches = (batR.data||[]).map(r=>r.name);
   catalogue = (catR.data||[]).map(r=>({id:r.id,grade:r.grade,gender:r.gender,name:r.name,inspired:r.inspired,price:r.price,supplier:r.supplier,status:r.status}));
   costing = (costR.data||[]).map(r=>({id:r.id,name:r.name,oilCost:r.oil_cost,fixative:r.fixative,alcohol:r.alcohol,moisturizer:r.moisturizer,box:r.box,label:r.label,markup:r.markup,notes:r.notes||''}));
@@ -1354,11 +1368,13 @@ function switchTab(t){
   if(addLabels[t]){addBtn.style.display='';addBtn.textContent='+ '+addLabels[t];}
   else addBtn.style.display='none';
   const isOrders=t==='orders';
+  const isPurchases=t==='purchases';
   const isLog=t==='stocklog';
   document.getElementById('tb-status-filter').style.display=isOrders?'':'none';
   document.getElementById('tb-paid-filter').style.display=isOrders?'':'none';
   document.getElementById('tb-delivery-filter').style.display=isOrders?'':'none';
   document.getElementById('tb-payment-filter').style.display=isOrders?'':'none';
+  document.getElementById('tb-pur-payment-filter').style.display=isPurchases?'':'none';
   document.getElementById('tb-logtype-filter').style.display=isLog?'':'none';
   document.getElementById('tb-batch-filter').style.display=isLog?'none':'';
   document.getElementById('tb-batch').style.display=(isLog||t==='profit')?'none':'';
@@ -1370,6 +1386,7 @@ function switchTab(t){
     document.getElementById('tb-payment-filter').value='';
     document.getElementById('filter-chips').style.display='none';
   }
+  if(!isPurchases) document.getElementById('tb-pur-payment-filter').value='';
   if(!isLog) document.getElementById('tb-logtype-filter').value='';
   // Clear search when switching tabs so it doesn't bleed across
   document.getElementById('tb-search').value='';
@@ -1581,13 +1598,14 @@ function renderOrders(){
 function renderPurchases(){
   const search=document.getElementById('tb-search').value.toLowerCase();
   const batch=document.getElementById('tb-batch-filter').value;
+  const payment=document.getElementById('tb-pur-payment-filter').value;
   let data=purchases.filter(p=>{
-    return (!batch||p.batch===batch)&&(p.item.toLowerCase().includes(search)||p.batch.toLowerCase().includes(search));
+    return (!batch||p.batch===batch)&&(!payment||(p.payment||'Cash')===payment)&&(p.item.toLowerCase().includes(search)||p.batch.toLowerCase().includes(search));
   });
   const ss=sortState.purchases;
   data.sort((a,b)=>{
     let av=a[ss.k],bv=b[ss.k];
-    return typeof av==='string'?av.localeCompare(bv)*ss.d:(av-bv)*ss.d;
+    return typeof av==='string'?(av||'').localeCompare(bv||'')*ss.d:((+av||0)-(+bv||0))*ss.d;
   });
   const totalPur=purchases.reduce((a,p)=>a+(+p.total||0),0);
   const bBudget={};
@@ -1600,13 +1618,15 @@ function renderPurchases(){
     <div class="stat-card green"><div class="stat-lbl">Batch Count</div><div class="stat-val">${batches.length}</div><div class="stat-sub">Active batch groups</div></div>
     <div class="stat-card orange"><div class="stat-lbl">Avg per Record</div><div class="stat-val" style="font-size:20px">${purchases.length?fmt(totalPur/purchases.length):fmt(0)}</div><div class="stat-sub">Per purchase</div></div>`;
   const tbody=document.getElementById('purchases-body');
-  if(!data.length){tbody.innerHTML=`<tr><td colspan="6" class="empty-state"><p>No purchases found.</p></td></tr>`;return;}
+  if(!data.length){tbody.innerHTML=`<tr><td colspan="7" class="empty-state"><p>No purchases found.</p></td></tr>`;return;}
+  const payBadge={Cash:'badge-green',Gcash:'badge-blue',Transfer:'badge-orange'};
   tbody.innerHTML=data.map(p=>`<tr>
     <td><span class="badge badge-dark">${esc(p.batch)}</span></td>
     <td>${esc(p.item)}</td>
     <td class="c">${p.qty}</td>
     <td class="r">${fmt(p.price)}</td>
     <td class="r" style="font-family:var(--serif);font-size:15px;font-weight:600">${fmt(p.total)}</td>
+    <td class="c"><span class="badge ${payBadge[p.payment]||'badge-green'}">${esc(p.payment||'Cash')}</span></td>
     <td class="c no-print">
       <button class="act-btn" onclick="openEdit('purchases','${p.id}')">&#9998;</button>
       <button class="act-btn" onclick="delItem('purchases','${p.id}')">&#10005;</button>
@@ -1723,6 +1743,7 @@ function openAdd(){
     document.getElementById('pur-f-item').value='';
     document.getElementById('pur-f-qty').value='1';
     document.getElementById('pur-f-price').value='';
+    document.getElementById('pur-f-payment').value='Cash';
     document.getElementById('pur-total-preview').textContent='—';
     openModal('purchases-modal');
     setTimeout(()=>document.getElementById('pur-f-item').focus(),80);
@@ -1820,6 +1841,7 @@ function openEdit(tab,id){
     document.getElementById('pur-f-item').value=e.item;
     document.getElementById('pur-f-qty').value=e.qty;
     document.getElementById('pur-f-price').value=e.price;
+    document.getElementById('pur-f-payment').value=e.payment||'Cash';
     calcPurTotal(); openModal('purchases-modal');
   } else if(tab==='bottles'){
     const e=bottleStock.find(b=>b.id===id); if(!e) return;
@@ -2124,13 +2146,14 @@ function savePurchase(){
   const price=+document.getElementById('pur-f-price').value||0;
   const item=document.getElementById('pur-f-item').value.trim();
   const batch=document.getElementById('pur-f-batch').value;
+  const payment=document.getElementById('pur-f-payment').value;
   const errs=[];
   if(!item) errs.push('Item name is required.');
   if(!batch) errs.push('Please select a batch.');
   if(qty<=0) errs.push('Quantity must be greater than 0.');
   if(price<=0) errs.push('Price per unit must be greater than 0.');
   if(errs.length){alert('Please fix the following:\n\n'+errs.map(e=>'• '+e).join('\n'));return;}
-  const e={id:editId||uid(),batch,item,qty,price,total:qty*price};
+  const e={id:editId||uid(),batch,item,qty,price,total:qty*price,payment};
   if(editId){
     confirmSave('purchase record', ()=>{
       const idx=purchases.findIndex(x=>x.id===editId);
@@ -2829,8 +2852,8 @@ function exportCSV(){
     headers=['#','Fragrance','Price','Customer','Gender','Date','Status','Batch','Delivered','Paid','Payment'];
     rows=orders.map(o=>[o.num,o.name,o.price,o.customer,o.gender,o.date,o.status,o.batch,o.delivered,o.paid,o.payment]);
   } else if(tab==='purchases'){
-    headers=['Batch','Item','Qty','Price/Unit','Total'];
-    rows=purchases.map(p=>[p.batch,p.item,p.qty,p.price,p.total]);
+    headers=['Batch','Item','Qty','Price/Unit','Total','Payment'];
+    rows=purchases.map(p=>[p.batch,p.item,p.qty,p.price,p.total,p.payment||'Cash']);
   } else if(tab==='profit'){
     headers=['Date','Description','Amount','Notes'];
     rows=profitEntries.map(p=>[p.date,p.description,p.amount,p.notes]);
