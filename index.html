@@ -403,6 +403,8 @@ body{background:var(--offwhite);font-family:var(--sans);color:var(--dark);min-he
   <button class="tab-btn" id="tab-bottles" onclick="switchTab('bottles')">Bottle Inventory</button>
   <button class="tab-btn" id="tab-catalogue" onclick="switchTab('catalogue')">Fragrance Catalogue</button>
   <button class="tab-btn" id="tab-costing" onclick="switchTab('costing')">Perfume Costing</button>
+  <button class="tab-btn" id="tab-profit" onclick="switchTab('profit')">Profit Tracker</button>
+  <button class="tab-btn" id="tab-stocklog" onclick="switchTab('stocklog')">Stock History</button>
 </div>
 
 <!-- TOOLBAR -->
@@ -427,6 +429,18 @@ body{background:var(--offwhite);font-family:var(--sans);color:var(--dark);min-he
     <option value="">All Delivery</option>
     <option value="Yes">Delivered</option>
     <option value="No">Not Delivered</option>
+  </select>
+  <select class="tb-select" id="tb-payment-filter" onchange="render()" style="display:none">
+    <option value="">All Payment Types</option>
+    <option value="Cash">Cash</option>
+    <option value="Gcash">Gcash</option>
+    <option value="Transfer">Transfer</option>
+    <option value="N/A">N/A</option>
+  </select>
+  <select class="tb-select" id="tb-logtype-filter" onchange="render()" style="display:none">
+    <option value="">All Activity</option>
+    <option value="ADD">Additions Only</option>
+    <option value="REMOVE">Removals Only</option>
   </select>
   <input class="tb-search" id="tb-search" placeholder="Search..." oninput="render()"/>
   <div class="tb-sep"></div>
@@ -523,6 +537,7 @@ body{background:var(--offwhite);font-family:var(--sans);color:var(--dark);min-he
   <span id="chip-status" class="filter-chip" style="display:none"></span>
   <span id="chip-paid" class="filter-chip" style="display:none"></span>
   <span id="chip-delivery" class="filter-chip" style="display:none"></span>
+  <span id="chip-payment" class="filter-chip" style="display:none"></span>
   <button onclick="clearOrderFilters()" style="margin-left:auto;background:none;border:1px solid var(--accent);color:var(--accent);font-size:10px;padding:3px 10px;cursor:pointer;letter-spacing:0.10em;text-transform:uppercase;font-family:var(--sans)">&#10005; Clear All Filters</button>
 </div>
 
@@ -598,6 +613,49 @@ body{background:var(--offwhite);font-family:var(--sans);color:var(--dark);min-he
       <tbody id="costing-body"></tbody>
     </table>
     <button class="add-row-btn no-print" onclick="openAdd()">&#43; Add costing record</button>
+  </div>
+</div>
+
+<!-- PROFIT TRACKER TAB (manual, standalone — not connected to Dashboard/Orders profit) -->
+<div class="tab-panel" id="panel-profit">
+  <div style="background:var(--white);padding:14px 20px;border-left:4px solid var(--gold);margin-bottom:16px;font-size:13px;color:var(--gray)">
+    <strong style="color:var(--dark)">Manual Profit Log.</strong> This tracker is entirely separate from the Dashboard and Orders profit calculations — it does not read from or feed into them. Use it to log profit from your other/separate profit source.
+  </div>
+  <div class="stats-row" id="profit-stats"></div>
+  <div class="tbl-wrap">
+    <table class="tsg-table" id="profit-table">
+      <thead><tr>
+        <th onclick="sort('profit','date')">Date</th>
+        <th onclick="sort('profit','description')">Description</th>
+        <th class="r" onclick="sort('profit','amount')">Amount</th>
+        <th>Notes</th>
+        <th class="c no-print">Actions</th>
+      </tr></thead>
+      <tbody id="profit-body"></tbody>
+    </table>
+    <button class="add-row-btn no-print" onclick="openAdd()">&#43; Add profit entry</button>
+  </div>
+</div>
+
+<!-- STOCK HISTORY / AUDIT LOG TAB -->
+<div class="tab-panel" id="panel-stocklog">
+  <div style="background:var(--white);padding:14px 20px;border-left:4px solid var(--gold);margin-bottom:16px;font-size:13px;color:var(--gray)">
+    <strong style="color:var(--dark)">Inventory Audit Trail.</strong> Every stock addition (restocks) and deduction (orders marked Done) is logged automatically here, with date/time and who or what triggered it.
+  </div>
+  <div class="stats-row" id="stocklog-stats"></div>
+  <div class="tbl-wrap">
+    <table class="tsg-table" id="stocklog-table">
+      <thead><tr>
+        <th onclick="sort('stocklog','ts')">Date &amp; Time</th>
+        <th class="c">Type</th>
+        <th onclick="sort('stocklog','itemName')">Item</th>
+        <th>Batch</th>
+        <th class="c" onclick="sort('stocklog','qty')">Qty</th>
+        <th class="c">Resulting Stock</th>
+        <th>Reason / Who</th>
+      </tr></thead>
+      <tbody id="stocklog-body"></tbody>
+    </table>
   </div>
 </div>
 
@@ -730,6 +788,21 @@ body{background:var(--offwhite);font-family:var(--sans);color:var(--dark);min-he
   </div>
 </div>
 
+<!-- PROFIT TRACKER MODAL -->
+<div class="modal-overlay" id="profit-modal">
+  <div class="modal-box">
+    <div class="modal-title" id="profit-modal-title">Add Profit Entry</div>
+    <div class="mf"><label>Date</label><input type="date" id="profit-f-date"/></div>
+    <div class="mf"><label>Description</label><input id="profit-f-desc" placeholder="e.g. Padayon Invitation PH - July payout"/></div>
+    <div class="mf"><label>Amount (&#8369;)</label><input type="number" id="profit-f-amount" min="0" step="0.01" placeholder="e.g. 2500"/></div>
+    <div class="mf"><label>Notes</label><textarea id="profit-f-notes" placeholder="Optional notes"></textarea></div>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" onclick="closeModal('profit-modal')">Cancel</button>
+      <button class="modal-btn primary" id="profit-save-btn" onclick="saveProfitEntry()">Save</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ── SEED DATA ────────────────────────────────────────────────────────────────
 const SEED_INVENTORY = [{"id": "i001", "batch": "BATCH FOUR", "name": "Afternoon Swim", "oil": 1, "bottles": 1, "remaining": 3, "remarks": "None"}, {"id": "i002", "batch": "BATCH FOUR", "name": "AVENTUS", "oil": 1, "bottles": 1, "remaining": 3, "remarks": ""}, {"id": "i003", "batch": "BATCH ONE", "name": "Baccarat Rouge", "oil": 1, "bottles": 2, "remaining": 0, "remarks": "Personal Oil"}, {"id": "i004", "batch": "BATCH TWO", "name": "Baccarat Rouge", "oil": 1, "bottles": 4, "remaining": 0, "remarks": "None"}, {"id": "i005", "batch": "BATCH FOUR", "name": "Baccarat Rouge", "oil": 1, "bottles": 2, "remaining": 2, "remarks": "None"}, {"id": "i006", "batch": "BATCH THREE", "name": "BDC", "oil": 1, "bottles": 2, "remaining": 0, "remarks": ""}, {"id": "i007", "batch": "BATCH FIVE", "name": "Black Code", "oil": 1, "bottles": 2, "remaining": 2, "remarks": "Special Order"}, {"id": "i008", "batch": "BATCH ONE", "name": "Bvlgari - Amethyst", "oil": 1, "bottles": 4, "remaining": 0, "remarks": "None"}, {"id": "i009", "batch": "BATCH FOUR", "name": "Bvlgari - Amethyst", "oil": 1, "bottles": 4, "remaining": 1, "remarks": "None"}, {"id": "i010", "batch": "BATCH ONE", "name": "Chance Coco", "oil": 1, "bottles": 4, "remaining": 0, "remarks": "None"}, {"id": "i011", "batch": "BATCH ONE", "name": "Christian Dior - Sauvage", "oil": 1, "bottles": 2, "remaining": 0, "remarks": "Personal Oil"}, {"id": "i012", "batch": "BATCH THREE", "name": "Christian Dior - Sauvage", "oil": 1, "bottles": 3, "remaining": 1, "remarks": "None"}, {"id": "i013", "batch": "BATCH TWO", "name": "CK - ONE", "oil": 1, "bottles": 4, "remaining": 0, "remarks": "None"}, {"id": "i014", "batch": "BATCH THREE", "name": "CK - ONE", "oil": 1, "bottles": 2, "remaining": 2, "remarks": "None"}, {"id": "i015", "batch": "BATCH TWO", "name": "CK ETERNITY", "oil": 1, "bottles": 1, "remaining": 1, "remarks": "None"}, {"id": "i016", "batch": "BATCH ONE", "name": "Clinique Happy", "oil": 1, "bottles": 1, "remaining": 1, "remarks": "None"}, {"id": "i017", "batch": "BATCH ONE", "name": "Coco Mademoiselle", "oil": 1, "bottles": 2, "remaining": 2, "remarks": "None"}, {"id": "i018", "batch": "BATCH THREE", "name": "Cool Water - M", "oil": 1, "bottles": 3, "remaining": 1, "remarks": "None"}, {"id": "i019", "batch": "BATCH TWO", "name": "D&G LIGHT BLUE - W", "oil": 1, "bottles": 2, "remaining": 2, "remarks": "None"}, {"id": "i020", "batch": "BATCH FOUR", "name": "Delina", "oil": 1, "bottles": 1, "remaining": 2, "remarks": "None"}, {"id": "i021", "batch": "BATCH ONE", "name": "Imagination", "oil": 1, "bottles": 4, "remaining": 0, "remarks": "None"}, {"id": "i022", "batch": "BATCH FOUR", "name": "Imagination", "oil": 1, "bottles": 1, "remaining": 3, "remarks": "None"}, {"id": "i023", "batch": "BATCH TWO", "name": "INCANTO SHINE", "oil": 1, "bottles": 3, "remaining": 1, "remarks": "None"}, {"id": "i024", "batch": "BATCH ONE", "name": "Issey Miyake - Eau de Issey", "oil": 1, "bottles": 3, "remaining": 1, "remarks": "Remaining Oil is not enough"}, {"id": "i025", "batch": "BATCH ONE", "name": "Lacoste 12.12 Blanc (White)", "oil": 1, "bottles": 4, "remaining": 0, "remarks": "None"}, {"id": "i026", "batch": "BATCH THREE", "name": "Lacoste 12.12 Blanc (White)", "oil": 1, "bottles": 1, "remaining": 3, "remarks": "-2 IN TOTAL"}, {"id": "i027", "batch": "BATCH ONE", "name": "Lanvin - Eclat d'Arpege", "oil": 1, "bottles": 4, "remaining": 0, "remarks": "None"}, {"id": "i028", "batch": "BATCH TWO", "name": "Lanvin - Eclat d'Arpege", "oil": 1, "bottles": 4, "remaining": 0, "remarks": "None"}, {"id": "i029", "batch": "BATCH FOUR", "name": "Lanvin - Eclat d'Arpege", "oil": 1, "bottles": 3, "remaining": 2, "remarks": "Possible more than 1"}, {"id": "i030", "batch": "BATCH FOUR", "name": "Le Male", "oil": 1, "bottles": 1, "remaining": 3, "remarks": "None"}, {"id": "i031", "batch": "BATCH ONE", "name": "Libre YSL Men", "oil": 1, "bottles": 4, "remaining": 0, "remarks": "None"}, {"id": "i032", "batch": "BATCH THREE", "name": "Libre YSL Men", "oil": 1, "bottles": 1, "remaining": 0, "remarks": "Personal Oil"}, {"id": "i033", "batch": "BATCH FOUR", "name": "Libre YSL Men", "oil": 1, "bottles": 3, "remaining": 1, "remarks": "None"}, {"id": "i034", "batch": "BATCH ONE", "name": "Libre YSL Women", "oil": 1, "bottles": 2, "remaining": 2, "remarks": "None"}, {"id": "i035", "batch": "BATCH FOUR", "name": "Light Blue - M", "oil": 1, "bottles": 1, "remaining": 3, "remarks": "None"}, {"id": "i036", "batch": "BATCH ONE", "name": "Miss Dior", "oil": 1, "bottles": 4, "remaining": 0, "remarks": "None"}, {"id": "i037", "batch": "BATCH TWO", "name": "Miss Dior", "oil": 1, "bottles": 4, "remaining": 0, "remarks": "None"}, {"id": "i038", "batch": "BATCH FOUR", "name": "Miss Dior", "oil": 1, "bottles": 3, "remaining": 1, "remarks": "None"}, {"id": "i039", "batch": "BATCH FIVE", "name": "Miss Dior", "oil": 1, "bottles": 0, "remaining": 4, "remarks": ""}, {"id": "i040", "batch": "BATCH ONE", "name": "Omnia Crystalline", "oil": 1, "bottles": 4, "remaining": 0, "remarks": "None"}, {"id": "i041", "batch": "BATCH FOUR", "name": "Omnia Crystalline", "oil": 1, "bottles": 2, "remaining": 2, "remarks": "None"}, {"id": "i042", "batch": "BATCH FOUR", "name": "Red 12.12", "oil": 1, "bottles": 1, "remaining": 3, "remarks": "None"}, {"id": "i043", "batch": "BATCH FOUR", "name": "Sage and Seasalt", "oil": 1, "bottles": 1, "remaining": 3, "remarks": "None"}, {"id": "i044", "batch": "BATCH ONE", "name": "Santal 33", "oil": 1, "bottles": 2, "remaining": 2, "remarks": "None"}, {"id": "i045", "batch": "BATCH TWO", "name": "SAUVAGE ELIXIR", "oil": 1, "bottles": 2, "remaining": 2, "remarks": "None"}, {"id": "i046", "batch": "BATCH ONE", "name": "Stronger with You", "oil": 1, "bottles": 2, "remaining": 2, "remarks": "None"}, {"id": "i047", "batch": "BATCH ONE", "name": "Valaya", "oil": 1, "bottles": 4, "remaining": 0, "remarks": "None"}, {"id": "i048", "batch": "BATCH TWO", "name": "Valaya", "oil": 1, "bottles": 4, "remaining": 0, "remarks": "None"}, {"id": "i049", "batch": "BATCH THREE", "name": "Valaya", "oil": 1, "bottles": 4, "remaining": 0, "remarks": "None"}, {"id": "i050", "batch": "BATCH THREE", "name": "Valaya", "oil": 1, "bottles": 4, "remaining": 1, "remarks": "None"}, {"id": "i051", "batch": "BATCH FOUR", "name": "Valaya", "oil": 1, "bottles": 0, "remaining": 4, "remarks": "None"}, {"id": "i052", "batch": "BATCH FIVE", "name": "Valaya", "oil": 1, "bottles": 0, "remaining": 4, "remarks": ""}, {"id": "i053", "batch": "BATCH ONE", "name": "Vanilla and Anise", "oil": 1, "bottles": 4, "remaining": 0, "remarks": "None"}, {"id": "i054", "batch": "BATCH ONE", "name": "Versace - Eros", "oil": 1, "bottles": 4, "remaining": 0, "remarks": "None"}, {"id": "i055", "batch": "BATCH THREE", "name": "Versace - Eros", "oil": 1, "bottles": 4, "remaining": 0, "remarks": "None"}, {"id": "i056", "batch": "BATCH FOUR", "name": "Versace - Eros", "oil": 1, "bottles": 2, "remaining": 1, "remarks": "None"}, {"id": "i057", "batch": "BATCH FIVE", "name": "Versace - Eros", "oil": 1, "bottles": 0, "remaining": 4, "remarks": ""}, {"id": "i058", "batch": "BATCH ONE", "name": "VS Bombshell", "oil": 2, "bottles": 8, "remaining": 0, "remarks": "None"}, {"id": "i059", "batch": "BATCH THREE", "name": "VS Bombshell (120ml)", "oil": 1, "bottles": 8, "remaining": 11, "remarks": "None"}, {"id": "i060", "batch": "BATCH TWO", "name": "Y EDP", "oil": 1, "bottles": 2, "remaining": 0, "remarks": "None"}];
@@ -795,9 +868,10 @@ const SUPABASE_KEY = 'sb_publishable_hYBtrP2N0gm99GQIvLcrYw_73i7pq7e';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ── STATE ────────────────────────────────────────────────────────────────────
-let inv=[], orders=[], purchases=[], batches=[], catalogue=[], costing=[], bottleStock=[];
+let inv=[], orders=[], purchases=[], batches=[], catalogue=[], costing=[], bottleStock=[], profitEntries=[], stockLog=[];
 let activeTab='dash', editId=null;
-let sortState={inv:{k:'batch',d:1},orders:{k:'num',d:1},purchases:{k:'batch',d:1},catalogue:{k:'grade',d:1},costing:{k:'name',d:1},bottles:{k:'size',d:1}};
+let currentUsername='';
+let sortState={inv:{k:'batch',d:1},orders:{k:'num',d:1},purchases:{k:'batch',d:1},catalogue:{k:'grade',d:1},costing:{k:'name',d:1},bottles:{k:'size',d:1},profit:{k:'date',d:-1},stocklog:{k:'ts',d:-1}};
 let dbFileHandle = null;   // FileSystemFileHandle — the live Excel file
 let saveTimer    = null;   // debounce timer
 
@@ -999,18 +1073,27 @@ const SB_TABLES = {
   purchases:  { table:'purchases',    map:p=>({id:p.id, batch:p.batch, item:p.item, qty:+p.qty||0, price:+p.price||0, total:+p.total||0}) },
   catalogue:  { table:'catalogue',    map:c=>({id:c.id, grade:c.grade, gender:c.gender, name:c.name, inspired:c.inspired, price:+c.price||0, supplier:c.supplier, status:c.status}) },
   costing:    { table:'costing',      map:c=>({id:c.id, name:c.name, oil_cost:+c.oilCost||0, fixative:+c.fixative||0, alcohol:+c.alcohol||0, moisturizer:+c.moisturizer||0, box:+c.box||30, label:+c.label||10, markup:+c.markup||100, notes:c.notes||''}) },
+  profitEntries:{ table:'profit_entries', map:p=>({id:p.id, date:p.date||null, description:p.description||'', amount:+p.amount||0, notes:p.notes||''}) },
+  stockLog:   { table:'stock_log',    map:s=>({id:s.id, ts:s.ts, type:s.type, item_type:s.itemType, item_name:s.itemName, batch:s.batch||'', qty:+s.qty||0, resulting_stock:s.resultingStock, reason:s.reason||'', username:s.username||''}) },
 };
+// Tables that may not exist yet in an older Supabase project — failures here
+// are logged but never block saving/loading the core tables above.
+const SB_OPTIONAL_TABLES = ['profit_entries','stock_log'];
 
 async function doSave(){
   showSaveStatus('saving','Syncing to Supabase...');
+  const failedOptional=[];
   try{
-    const arrays = {inv,bottleStock,orders,purchases,catalogue,costing};
+    const arrays = {inv,bottleStock,orders,purchases,catalogue,costing,profitEntries,stockLog};
     for(const key of Object.keys(SB_TABLES)){
       const {table,map} = SB_TABLES[key];
       const rows = arrays[key].map(map);
       if(rows.length){
         const {error} = await sb.from(table).upsert(rows, {onConflict:'id'});
-        if(error) throw error;
+        if(error){
+          if(SB_OPTIONAL_TABLES.includes(table)){ failedOptional.push(table); console.warn('Optional table sync failed ('+table+'):',error.message); continue; }
+          throw error;
+        }
       }
     }
     // batches: simple text primary key list
@@ -1018,7 +1101,7 @@ async function doSave(){
       const {error:be} = await sb.from('batches').upsert(batches.map(name=>({name})), {onConflict:'name'});
       if(be) throw be;
     }
-    showSaveStatus('saved','Saved ✓');
+    showSaveStatus(failedOptional.length?'error':'saved', failedOptional.length?('Saved (some tables missing: '+failedOptional.join(', ')+')'):'Saved ✓');
     setTimeout(()=>hideSaveStatus(), 2500);
   }catch(e){
     showSaveStatus('error','Save failed: '+e.message);
@@ -1072,6 +1155,14 @@ function buildWorkbook(){
   const costRows=[['Fragrance Name','Oil Cost','Fixative','Alcohol','Moisturizer','Box','Label','Markup%','Notes']];
   costing.forEach(c=>costRows.push([c.name,c.oilCost,c.fixative,c.alcohol,c.moisturizer,c.box||30,c.label||10,c.markup||100,c.notes||'']));
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(costRows),'Costing');
+  // Profit Tracker (manual, standalone)
+  const profRows=[['Date','Description','Amount','Notes']];
+  profitEntries.forEach(p=>profRows.push([p.date,p.description,p.amount,p.notes||'']));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(profRows),'ProfitTracker');
+  // Stock History / Audit Log
+  const logRows=[['Date & Time','Type','Item','Batch','Qty','Resulting Stock','Reason / Who']];
+  stockLog.forEach(s=>logRows.push([s.ts,s.type,s.itemName,s.batch||'',s.qty,s.resultingStock,s.reason||'']));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(logRows),'StockHistory');
   // Summary
   const paidSales=orders.filter(o=>o.paid==='Yes').reduce((a,o)=>a+(+o.price||0),0);
   const totalPur=purchases.reduce((a,p)=>a+(+p.total||0),0);
@@ -1217,6 +1308,19 @@ async function load(){
   catalogue = (catR.data||[]).map(r=>({id:r.id,grade:r.grade,gender:r.gender,name:r.name,inspired:r.inspired,price:r.price,supplier:r.supplier,status:r.status}));
   costing = (costR.data||[]).map(r=>({id:r.id,name:r.name,oilCost:r.oil_cost,fixative:r.fixative,alcohol:r.alcohol,moisturizer:r.moisturizer,box:r.box,label:r.label,markup:r.markup,notes:r.notes||''}));
 
+  // Optional tables (Profit Tracker / Stock History) — may not exist on older
+  // Supabase projects yet. Fetch separately so a missing table never breaks load().
+  try{
+    const profR = await sb.from('profit_entries').select('*');
+    if(profR.error) throw profR.error;
+    profitEntries = (profR.data||[]).map(r=>({id:r.id,date:r.date,description:r.description,amount:r.amount,notes:r.notes||''}));
+  }catch(e){ console.warn('profit_entries table not available yet:',e.message); profitEntries=profitEntries||[]; }
+  try{
+    const logR = await sb.from('stock_log').select('*');
+    if(logR.error) throw logR.error;
+    stockLog = (logR.data||[]).map(r=>({id:r.id,ts:r.ts,type:r.type,itemType:r.item_type,itemName:r.item_name,batch:r.batch,qty:r.qty,resultingStock:r.resulting_stock,reason:r.reason,username:r.username}));
+  }catch(e){ console.warn('stock_log table not available yet:',e.message); stockLog=stockLog||[]; }
+
   // First-ever run (empty database): seed it once so the app isn't blank.
   if(!inv.length && !orders.length && !purchases.length && !catalogue.length && !costing.length && !bottleStock.length){
     inv=JSON.parse(JSON.stringify(SEED_INVENTORY));
@@ -1239,27 +1343,34 @@ const rem = (oil,bot) => Math.max(0,(parseFloat(oil)||0)*4-(parseFloat(bot)||0))
 // ── TAB SWITCH ───────────────────────────────────────────────────────────────
 function switchTab(t){
   activeTab=t;
-  ['dash','inv','orders','purchases','bottles','catalogue','costing'].forEach(x=>{
+  ['dash','inv','orders','purchases','bottles','catalogue','costing','profit','stocklog'].forEach(x=>{
     const p=document.getElementById('panel-'+x);
     const tb=document.getElementById('tab-'+x);
     if(p) p.classList.toggle('active',x===t);
     if(tb) tb.classList.toggle('active',x===t);
   });
-  const addLabels={dash:null,inv:'Add Fragrance',orders:'Add Order',purchases:'Add Purchase',bottles:'Add Bottle Type',catalogue:'Add Fragrance',costing:'Add Costing'};
+  const addLabels={dash:null,inv:'Add Fragrance',orders:'Add Order',purchases:'Add Purchase',bottles:'Add Bottle Type',catalogue:'Add Fragrance',costing:'Add Costing',profit:'Add Profit Entry',stocklog:null};
   const addBtn=document.getElementById('tb-add');
   if(addLabels[t]){addBtn.style.display='';addBtn.textContent='+ '+addLabels[t];}
   else addBtn.style.display='none';
   const isOrders=t==='orders';
+  const isLog=t==='stocklog';
   document.getElementById('tb-status-filter').style.display=isOrders?'':'none';
   document.getElementById('tb-paid-filter').style.display=isOrders?'':'none';
   document.getElementById('tb-delivery-filter').style.display=isOrders?'':'none';
+  document.getElementById('tb-payment-filter').style.display=isOrders?'':'none';
+  document.getElementById('tb-logtype-filter').style.display=isLog?'':'none';
+  document.getElementById('tb-batch-filter').style.display=isLog?'none':'';
+  document.getElementById('tb-batch').style.display=(isLog||t==='profit')?'none':'';
   document.getElementById('tb-export-csv').style.display=t!=='dash'?'':'none';
   if(!isOrders){
     document.getElementById('tb-paid-filter').value='';
     document.getElementById('tb-delivery-filter').value='';
     document.getElementById('tb-status-filter').value='';
+    document.getElementById('tb-payment-filter').value='';
     document.getElementById('filter-chips').style.display='none';
   }
+  if(!isLog) document.getElementById('tb-logtype-filter').value='';
   // Clear search when switching tabs so it doesn't bleed across
   document.getElementById('tb-search').value='';
   render();
@@ -1288,6 +1399,8 @@ function render(){
   else if(activeTab==='bottles') renderBottles();
   else if(activeTab==='catalogue') renderCatalogue();
   else if(activeTab==='costing') renderCosting();
+  else if(activeTab==='profit') renderProfit();
+  else if(activeTab==='stocklog') renderStockLog();
 }
 
 function updateHint(){
@@ -1410,11 +1523,13 @@ function renderOrders(){
   const status=document.getElementById('tb-status-filter').value;
   const paid=document.getElementById('tb-paid-filter').value;
   const delivery=document.getElementById('tb-delivery-filter').value;
+  const payment=document.getElementById('tb-payment-filter').value;
   let data=orders.filter(o=>{
     return (!batch||o.batch===batch)
       &&(!status||o.status===status)
       &&(!paid||o.paid===paid)
       &&(!delivery||o.delivered===delivery)
+      &&(!payment||(o.payment||'N/A')===payment)
       &&(o.name.toLowerCase().includes(search)||o.customer.toLowerCase().includes(search)||(o.num+'').includes(search));
   });
   const ss=sortState.orders;
@@ -1430,7 +1545,7 @@ function renderOrders(){
   // Filtered stats (reflect current filter)
   const filtPaid=data.filter(o=>o.paid==='Yes').reduce((a,o)=>a+(+o.price||0),0);
   const filtCount=data.length;
-  const isFiltered=paid||delivery||status||batch||search;
+  const isFiltered=paid||delivery||status||batch||payment||search;
   document.getElementById('orders-stats').innerHTML=`
     <div class="stat-card"><div class="stat-lbl">${isFiltered?'Filtered':'Total'} Orders</div><div class="stat-val">${filtCount}</div><div class="stat-sub">${isFiltered?'of '+orders.length+' total':'All records'}</div></div>
     <div class="stat-card green"><div class="stat-lbl">${isFiltered?'Filtered Revenue':'Total Revenue'}</div><div class="stat-val">${fmt(isFiltered?filtPaid:paidSales)}</div><div class="stat-sub">Paid orders only</div></div>
@@ -1496,6 +1611,74 @@ function renderPurchases(){
       <button class="act-btn" onclick="openEdit('purchases','${p.id}')">&#9998;</button>
       <button class="act-btn" onclick="delItem('purchases','${p.id}')">&#10005;</button>
     </td></tr>`).join('');
+}
+
+// ── PROFIT TRACKER RENDER (manual, standalone — never reads orders/purchases) ──
+function renderProfit(){
+  const search=document.getElementById('tb-search').value.toLowerCase();
+  let data=profitEntries.filter(p=>(p.description||'').toLowerCase().includes(search)||(p.notes||'').toLowerCase().includes(search));
+  const ss=sortState.profit;
+  data.sort((a,b)=>{
+    let av=a[ss.k],bv=b[ss.k];
+    if(ss.k==='date') return (new Date(av||0)-new Date(bv||0))*ss.d;
+    return typeof av==='string'?(av||'').localeCompare(bv||'')*ss.d:((+av||0)-(+bv||0))*ss.d;
+  });
+  const total=profitEntries.reduce((a,p)=>a+(+p.amount||0),0);
+  const now=new Date();
+  const thisMonth=profitEntries.filter(p=>{const d=new Date(p.date);return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth();}).reduce((a,p)=>a+(+p.amount||0),0);
+  document.getElementById('profit-stats').innerHTML=`
+    <div class="stat-card green"><div class="stat-lbl">Total Manual Profit</div><div class="stat-val">${fmt(total)}</div><div class="stat-sub">${profitEntries.length} entries</div></div>
+    <div class="stat-card gold" style="border-left-color:var(--gold)"><div class="stat-lbl">This Month</div><div class="stat-val">${fmt(thisMonth)}</div><div class="stat-sub">${now.toLocaleString('en-PH',{month:'long',year:'numeric'})}</div></div>
+    <div class="stat-card blue"><div class="stat-lbl">Average per Entry</div><div class="stat-val" style="font-size:20px">${profitEntries.length?fmt(total/profitEntries.length):fmt(0)}</div><div class="stat-sub">Per record</div></div>`;
+  const tbody=document.getElementById('profit-body');
+  if(!data.length){tbody.innerHTML=`<tr><td colspan="5" class="empty-state"><p>No profit entries yet. This log is separate from Dashboard/Orders profit — add entries manually.</p></td></tr>`;return;}
+  tbody.innerHTML=data.map(p=>`<tr>
+    <td style="font-size:12px;color:var(--gray)">${esc(p.date||'')}</td>
+    <td><strong>${esc(p.description)}</strong></td>
+    <td class="r" style="font-family:var(--serif);font-size:15px;font-weight:600;color:var(--green)">${fmt(p.amount)}</td>
+    <td style="color:var(--gray);font-style:italic;font-size:12px">${esc(p.notes||'')}</td>
+    <td class="c no-print">
+      <button class="act-btn" onclick="openEdit('profit','${p.id}')">&#9998;</button>
+      <button class="act-btn" onclick="delItem('profit','${p.id}')">&#10005;</button>
+    </td></tr>`).join('');
+}
+
+// ── STOCK HISTORY / AUDIT LOG RENDER ────────────────────────────────────────
+function renderStockLog(){
+  const search=document.getElementById('tb-search').value.toLowerCase();
+  const type=document.getElementById('tb-logtype-filter').value;
+  let data=stockLog.filter(s=>{
+    return (!type||s.type===type)&&((s.itemName||'').toLowerCase().includes(search)||(s.reason||'').toLowerCase().includes(search)||(s.batch||'').toLowerCase().includes(search));
+  });
+  const ss=sortState.stocklog;
+  data.sort((a,b)=>{
+    let av=a[ss.k],bv=b[ss.k];
+    if(ss.k==='ts') return (new Date(av||0)-new Date(bv||0))*ss.d;
+    return typeof av==='string'?(av||'').localeCompare(bv||'')*ss.d:((+av||0)-(+bv||0))*ss.d;
+  });
+  const adds=stockLog.filter(s=>s.type==='ADD').length;
+  const removes=stockLog.filter(s=>s.type==='REMOVE').length;
+  const today=new Date().toDateString();
+  const todayCount=stockLog.filter(s=>new Date(s.ts).toDateString()===today).length;
+  document.getElementById('stocklog-stats').innerHTML=`
+    <div class="stat-card">${''}<div class="stat-lbl">Total Log Entries</div><div class="stat-val">${stockLog.length}</div><div class="stat-sub">All activity</div></div>
+    <div class="stat-card green"><div class="stat-lbl">Stock Added</div><div class="stat-val">${adds}</div><div class="stat-sub">Restock events</div></div>
+    <div class="stat-card red"><div class="stat-lbl">Stock Removed</div><div class="stat-val">${removes}</div><div class="stat-sub">Deduction events</div></div>
+    <div class="stat-card blue"><div class="stat-lbl">Today</div><div class="stat-val">${todayCount}</div><div class="stat-sub">Logged today</div></div>`;
+  const tbody=document.getElementById('stocklog-body');
+  if(!data.length){tbody.innerHTML=`<tr><td colspan="7" class="empty-state"><p>No stock activity logged yet.</p></td></tr>`;return;}
+  tbody.innerHTML=data.map(s=>{
+    const isAdd=s.type==='ADD';
+    return `<tr>
+      <td style="font-size:12px;color:var(--gray)">${esc(new Date(s.ts).toLocaleString('en-PH'))}</td>
+      <td class="c"><span class="badge ${isAdd?'badge-green':'badge-red'}">${isAdd?'&#43; ADD':'&minus; REMOVE'}</span></td>
+      <td><strong>${esc(s.itemName)}</strong></td>
+      <td><span class="badge badge-dark" style="font-size:8px">${esc(s.batch||'')}</span></td>
+      <td class="c" style="font-family:var(--serif);font-size:15px;font-weight:600;color:${isAdd?'var(--green)':'var(--red)'}">${isAdd?'+':'-'}${Math.abs(s.qty)}</td>
+      <td class="c" style="color:var(--gray)">${s.resultingStock??''}</td>
+      <td style="font-size:12px;color:var(--gray)">${esc(s.reason||'')}</td>
+    </tr>`;
+  }).join('');
 }
 
 // ── SORT ─────────────────────────────────────────────────────────────────────
@@ -1578,6 +1761,16 @@ function openAdd(){
     calcCostPreview();
     openModal('costing-modal');
     setTimeout(()=>document.getElementById('cost-f-name').focus(),80);
+  } else if(activeTab==='profit'){
+    editId=null;
+    document.getElementById('profit-modal-title').textContent='Add Profit Entry';
+    document.getElementById('profit-save-btn').textContent='Save';
+    document.getElementById('profit-f-date').value=new Date().toISOString().slice(0,10);
+    document.getElementById('profit-f-desc').value='';
+    document.getElementById('profit-f-amount').value='';
+    document.getElementById('profit-f-notes').value='';
+    openModal('profit-modal');
+    setTimeout(()=>document.getElementById('profit-f-desc').focus(),80);
   }
 }
 
@@ -1666,6 +1859,16 @@ function openEdit(tab,id){
     document.getElementById('cost-f-markup').value=e.markup||100;
     document.getElementById('cost-f-notes').value=e.notes||'';
     calcCostPreview(); openModal('costing-modal');
+  } else if(tab==='profit'){
+    const e=profitEntries.find(p=>p.id===id); if(!e) return;
+    editId=id;
+    document.getElementById('profit-modal-title').textContent='Edit Profit Entry';
+    document.getElementById('profit-save-btn').textContent='Update';
+    document.getElementById('profit-f-date').value=e.date||'';
+    document.getElementById('profit-f-desc').value=e.description||'';
+    document.getElementById('profit-f-amount').value=e.amount;
+    document.getElementById('profit-f-notes').value=e.notes||'';
+    openModal('profit-modal');
   }
 }
 
@@ -1684,11 +1887,21 @@ function saveInv(){
   if(editId){
     confirmSave('fragrance entry', ()=>{
       const i=inv.find(x=>x.id===editId);
-      if(i){i.batch=batch;i.name=name;i.stock=stock;i.minStock=minStock;i.remarks=remarks;}
+      if(i){
+        const oldStock=getStock(i);
+        i.batch=batch;i.name=name;i.stock=stock;i.minStock=minStock;i.remarks=remarks;
+        const delta=stock-oldStock;
+        if(delta!==0){
+          logStock({type:delta>0?'ADD':'REMOVE', itemType:'fragrance', itemName:name, batch, qty:delta, resultingStock:stock, reason:'Edited fragrance entry ('+oldStock+' → '+stock+')'});
+        }
+      }
       save(); render(); closeModal('inv-modal');
     });
   } else {
     inv.push({id:uid(),batch,name,stock,minStock,remarks});
+    if(stock>0){
+      logStock({type:'ADD', itemType:'fragrance', itemName:name, batch, qty:stock, resultingStock:stock, reason:'New fragrance entry created'});
+    }
     save(); render(); closeModal('inv-modal');
   }
 }
@@ -1786,12 +1999,17 @@ function findFragMatch(name){
   })||null;
 }
 
-function restoreStocks(orderName){
+function restoreStocks(orderName, orderInfo){
   // Restore 1 unit to matching fragrance stock
   const match = findFragMatch(orderName);
   if(match){
     match.stock = getStock(match) + 1;
     delete match.oil; delete match.bottles;
+    logStock({
+      type:'ADD', itemType:'fragrance', itemName:match.name, batch:match.batch,
+      qty:1, resultingStock:match.stock,
+      reason:'Reverted Order #'+(orderInfo?.num||'')+' — '+(orderInfo?.customer||'Unknown customer')+' (status changed from Done)'
+    });
   } else {
     console.warn('restoreStocks: no fragrance match for', orderName);
   }
@@ -1800,6 +2018,11 @@ function restoreStocks(orderName){
   if(bot){
     bot.stock     = (+bot.stock||0) + 1;
     bot.totalUsed = Math.max(0, (+bot.totalUsed||0) - 1);
+    logStock({
+      type:'ADD', itemType:'bottle', itemName:bot.name+' ('+bot.size+')', batch:'',
+      qty:1, resultingStock:bot.stock,
+      reason:'Reverted Order #'+(orderInfo?.num||'')+' — '+(orderInfo?.customer||'Unknown customer')+' (status changed from Done)'
+    });
   } else {
     console.warn('restoreStocks: no bottle stock entry found');
   }
@@ -1866,10 +2089,10 @@ function saveOrder(){
 
   // ── Apply stock changes ───────────────────────────────────────────────
   if(status==='Done' && !wasDeducted){
-    deductOnDone(name, false);
+    deductOnDone(name, e);
     e.stockDeducted=true;
   } else if(wasDone && status!=='Done' && wasDeducted){
-    restoreStocks(name);
+    restoreStocks(name, e);
     e.stockDeducted=false;
   }
 
@@ -2212,6 +2435,30 @@ function saveCosting(){
   }
 }
 
+// ── PROFIT TRACKER SAVE (manual, standalone) ──────────────────────────────────
+function saveProfitEntry(){
+  const date=document.getElementById('profit-f-date').value;
+  const description=document.getElementById('profit-f-desc').value.trim();
+  const amount=+document.getElementById('profit-f-amount').value||0;
+  const notes=document.getElementById('profit-f-notes').value.trim();
+  const errs=[];
+  if(!date) errs.push('Date is required.');
+  if(!description) errs.push('Description is required.');
+  if(!amount||amount<=0) errs.push('Amount must be greater than 0.');
+  if(errs.length){alert('Please fix the following:\n\n'+errs.map(e=>'• '+e).join('\n'));return;}
+  const e={id:editId||uid(),date,description,amount,notes};
+  if(editId){
+    confirmSave('profit entry', ()=>{
+      const idx=profitEntries.findIndex(p=>p.id===editId);
+      if(idx>-1) profitEntries[idx]=e;
+      save(); render(); closeModal('profit-modal');
+    });
+  } else {
+    profitEntries.push(e);
+    save(); render(); closeModal('profit-modal');
+  }
+}
+
 // ── COSTING PREVIEW ───────────────────────────────────────────────────────────
 function calcCostPreview(){
   const oil=+document.getElementById('cost-f-oil').value||0;
@@ -2262,6 +2509,13 @@ function delItem(tab,id){
     document.getElementById('confirm-title').textContent='Delete Costing Record?';
     document.getElementById('confirm-body').textContent=`Delete costing record for "${e?.name}"?`;
     document.getElementById('confirm-ok').onclick=()=>{costing=costing.filter(c=>c.id!==id);sbDelete('costing',id);save();render();closeModal('confirm-modal');};
+    openModal('confirm-modal'); return;
+  }
+  if(tab==='profit'){
+    const e=profitEntries.find(p=>p.id===id);
+    document.getElementById('confirm-title').textContent='Delete Profit Entry?';
+    document.getElementById('confirm-body').textContent=`Delete profit entry "${e?.description}"?`;
+    document.getElementById('confirm-ok').onclick=()=>{profitEntries=profitEntries.filter(p=>p.id!==id);sbDelete('profitEntries',id);save();render();closeModal('confirm-modal');};
     openModal('confirm-modal'); return;
   }
   delItemLegacy(tab,id);
@@ -2384,6 +2638,7 @@ function confirmRestock(){
   if(b){
     b.stock = (b.stock||0) + qty;
     b.totalAdded = (b.totalAdded||0) + qty;
+    logStock({type:'ADD', itemType:'bottle', itemName:b.name+' ('+b.size+')', batch:'', qty, resultingStock:b.stock, reason:'Manual bottle restock'});
   }
   save(); render(); closeModal('restock-modal');
 }
@@ -2408,10 +2663,18 @@ function confirmFragRestock(){
   if(isNaN(newStock)||newStock<0){alert('Please enter a valid stock number (0 or more).');return;}
   const i = inv.find(x=>x.id===fragRestockId);
   if(i){
+    const oldStock = getStock(i);
     i.stock    = newStock;
     i.minStock = minStock;
     // Clear legacy formula fields so new stock takes precedence
     delete i.oil; delete i.bottles;
+    const delta = newStock - oldStock;
+    if(delta!==0){
+      logStock({
+        type: delta>0?'ADD':'REMOVE', itemType:'fragrance', itemName:i.name, batch:i.batch,
+        qty:delta, resultingStock:newStock, reason:'Manual stock set ('+oldStock+' → '+newStock+')'
+      });
+    }
   }
   save(); render(); closeModal('frag-restock-modal');
 }
@@ -2444,7 +2707,14 @@ function saveBulkRestock(){
     if(isNaN(qty)||qty<0) return;
     const id = input.dataset.invId;
     const item = inv.find(x=>x.id===id);
-    if(item){ item.stock=qty; delete item.oil; delete item.bottles; changed++; }
+    if(item){
+      const oldStock=getStock(item);
+      item.stock=qty; delete item.oil; delete item.bottles; changed++;
+      const delta=qty-oldStock;
+      if(delta!==0){
+        logStock({type:delta>0?'ADD':'REMOVE', itemType:'fragrance', itemName:item.name, batch:item.batch, qty:delta, resultingStock:qty, reason:'Bulk restock ('+oldStock+' → '+qty+')'});
+      }
+    }
   });
   document.querySelectorAll('.bulk-min-input').forEach(input=>{
     const id = input.dataset.minId;
@@ -2455,19 +2725,41 @@ function saveBulkRestock(){
   if(changed>0) alert(changed+' fragrance stock levels updated.');
 }
 
+// ── STOCK AUDIT LOG ──────────────────────────────────────────────────────────
+// Records every plus/minus stock movement with date/time and who/why.
+function logStock({type,itemType,itemName,batch,qty,resultingStock,reason}){
+  stockLog.unshift({
+    id:uid(), ts:new Date().toISOString(), type, itemType,
+    itemName:itemName||'', batch:batch||'', qty:Math.abs(+qty||0),
+    resultingStock: resultingStock??'', reason:reason||'',
+    username: currentUsername||''
+  });
+  if(stockLog.length>1000) stockLog=stockLog.slice(0,1000);
+}
+
 // ── AUTO-DEDUCT ON ORDER DONE ──────────────────────────────────────────────
-function deductOnDone(orderName){
+function deductOnDone(orderName, orderInfo){
   // Deduct 1 from matching fragrance stock
   const match = findFragMatch(orderName);
   if(match){
     match.stock = Math.max(0, getStock(match) - 1);
     delete match.oil; delete match.bottles;
+    logStock({
+      type:'REMOVE', itemType:'fragrance', itemName:match.name, batch:match.batch,
+      qty:1, resultingStock:match.stock,
+      reason:'Order #'+(orderInfo?.num||'')+' — '+(orderInfo?.customer||'Unknown customer')
+    });
   }
   // Deduct 1 bottle from first available bottle stock
   const bot = bottleStock.find(b => (+b.stock||0) > 0) || bottleStock[0];
   if(bot){
     bot.stock     = Math.max(0, (+bot.stock||0) - 1);
     bot.totalUsed = (+bot.totalUsed||0) + 1;
+    logStock({
+      type:'REMOVE', itemType:'bottle', itemName:bot.name+' ('+bot.size+')', batch:'',
+      qty:1, resultingStock:bot.stock,
+      reason:'Order #'+(orderInfo?.num||'')+' — '+(orderInfo?.customer||'Unknown customer')
+    });
   }
 }
 
@@ -2495,6 +2787,7 @@ function clearOrderFilters(){
   document.getElementById('tb-status-filter').value='';
   document.getElementById('tb-paid-filter').value='';
   document.getElementById('tb-delivery-filter').value='';
+  document.getElementById('tb-payment-filter').value='';
   document.getElementById('tb-search').value='';
   render();
 }
@@ -2503,13 +2796,15 @@ function updateFilterChips(){
   const status=document.getElementById('tb-status-filter').value;
   const paid=document.getElementById('tb-paid-filter').value;
   const delivery=document.getElementById('tb-delivery-filter').value;
-  const hasFilter=status||paid||delivery;
+  const payment=document.getElementById('tb-payment-filter').value;
+  const hasFilter=status||paid||delivery||payment;
   const chipsBar=document.getElementById('filter-chips');
   chipsBar.style.display=activeTab==='orders'&&hasFilter?'flex':'none';
 
   const chipStatus=document.getElementById('chip-status');
   const chipPaid=document.getElementById('chip-paid');
   const chipDelivery=document.getElementById('chip-delivery');
+  const chipPayment=document.getElementById('chip-payment');
 
   if(status){chipStatus.style.display='';chipStatus.textContent='Status: '+status;}
   else chipStatus.style.display='none';
@@ -2519,6 +2814,9 @@ function updateFilterChips(){
 
   if(delivery){chipDelivery.style.display='';chipDelivery.textContent=delivery==='Yes'?'Delivered':'Not Delivered';}
   else chipDelivery.style.display='none';
+
+  if(payment){chipPayment.style.display='';chipPayment.textContent='Payment: '+payment;}
+  else chipPayment.style.display='none';
 }
 
 // ── EXPORT CSV ───────────────────────────────────────────────────────────────
@@ -2533,6 +2831,12 @@ function exportCSV(){
   } else if(tab==='purchases'){
     headers=['Batch','Item','Qty','Price/Unit','Total'];
     rows=purchases.map(p=>[p.batch,p.item,p.qty,p.price,p.total]);
+  } else if(tab==='profit'){
+    headers=['Date','Description','Amount','Notes'];
+    rows=profitEntries.map(p=>[p.date,p.description,p.amount,p.notes]);
+  } else if(tab==='stocklog'){
+    headers=['Date & Time','Type','Item','Batch','Qty','Resulting Stock','Reason / Who'];
+    rows=stockLog.map(s=>[new Date(s.ts).toLocaleString('en-PH'),s.type,s.itemName,s.batch,s.qty,s.resultingStock,s.reason]);
   }
   const csv=[headers,...rows].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
   const a=document.createElement('a');
@@ -2652,6 +2956,7 @@ function doLogout(){
 }
 
 async function showApp(username){
+  currentUsername = username;
   document.getElementById('login-screen').style.display='none';
   document.getElementById('logged-user-tag').textContent='Signed in as ' + username;
   const badge=document.getElementById('db-file-badge');
