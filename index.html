@@ -1607,16 +1607,17 @@ function renderPurchases(){
     let av=a[ss.k],bv=b[ss.k];
     return typeof av==='string'?(av||'').localeCompare(bv||'')*ss.d:((+av||0)-(+bv||0))*ss.d;
   });
-  const totalPur=purchases.reduce((a,p)=>a+(+p.total||0),0);
+  const isFiltered = !!(batch||payment||search);
+  const totalPur=data.reduce((a,p)=>a+(+p.total||0),0);
   const bBudget={};
-  purchases.forEach(p=>bBudget[p.batch]=(bBudget[p.batch]||0)+(+p.total||0));
+  data.forEach(p=>bBudget[p.batch]=(bBudget[p.batch]||0)+(+p.total||0));
   const topBatch=Object.entries(bBudget).sort((a,b)=>b[1]-a[1])[0];
   document.getElementById('purchases-stats').innerHTML=`
-    <div class="stat-card"><div class="stat-lbl">Total Records</div><div class="stat-val">${purchases.length}</div><div class="stat-sub">Purchase entries</div></div>
-    <div class="stat-card red"><div class="stat-lbl">Total Spent</div><div class="stat-val">${fmt(totalPur)}</div><div class="stat-sub">All batches combined</div></div>
+    <div class="stat-card"><div class="stat-lbl">${isFiltered?'Filtered Records':'Total Records'}</div><div class="stat-val">${data.length}</div><div class="stat-sub">${isFiltered?`of ${purchases.length} purchase entries`:'Purchase entries'}</div></div>
+    <div class="stat-card red"><div class="stat-lbl">${isFiltered?'Filtered Spent':'Total Spent'}</div><div class="stat-val">${fmt(totalPur)}</div><div class="stat-sub">${isFiltered?'Matching current filters':'All batches combined'}</div></div>
     <div class="stat-card"><div class="stat-lbl">Highest Batch Spend</div><div class="stat-val" style="font-size:20px">${topBatch?esc(topBatch[0]):'-'}</div><div class="stat-sub">${topBatch?fmt(topBatch[1]):''}</div></div>
     <div class="stat-card green"><div class="stat-lbl">Batch Count</div><div class="stat-val">${batches.length}</div><div class="stat-sub">Active batch groups</div></div>
-    <div class="stat-card orange"><div class="stat-lbl">Avg per Record</div><div class="stat-val" style="font-size:20px">${purchases.length?fmt(totalPur/purchases.length):fmt(0)}</div><div class="stat-sub">Per purchase</div></div>`;
+    <div class="stat-card orange"><div class="stat-lbl">Avg per Record</div><div class="stat-val" style="font-size:20px">${data.length?fmt(totalPur/data.length):fmt(0)}</div><div class="stat-sub">${isFiltered?'Per filtered purchase':'Per purchase'}</div></div>`;
   const tbody=document.getElementById('purchases-body');
   if(!data.length){tbody.innerHTML=`<tr><td colspan="7" class="empty-state"><p>No purchases found.</p></td></tr>`;return;}
   const payBadge={Cash:'badge-green',Gcash:'badge-blue',Transfer:'badge-orange'};
