@@ -187,6 +187,18 @@ body{background:var(--offwhite);font-family:var(--sans);color:var(--dark);min-he
 .badge-red{background:#FEE2E2;color:#991B1B}
 .badge-blue{background:#DBEAFE;color:#1E40AF}
 .badge-orange{background:#FEF3C7;color:#92400E}
+.pagination-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:12px 4px 4px;border-top:1px solid var(--border,#eee);margin-top:8px}
+.pagination-bar:empty{display:none;border:none;margin:0;padding:0}
+.pag-info{font-size:12px;color:var(--gray)}
+.pag-controls{display:flex;align-items:center;gap:6px}
+.pag-controls select{font-size:12px;padding:4px 6px;border:1px solid var(--border,#ddd);border-radius:4px;background:var(--white);color:var(--dark)}
+.pag-controls button{font-size:12px;padding:4px 10px;border:1px solid var(--border,#ddd);border-radius:4px;background:var(--white);color:var(--dark);cursor:pointer}
+.pag-controls button:hover:not(:disabled){background:var(--gold);border-color:var(--gold);color:var(--white)}
+.pag-controls button:disabled{opacity:0.35;cursor:not-allowed}
+.pag-page{font-size:12px;color:var(--gray);white-space:nowrap;padding:0 4px}
+.bulk-actions-bar{display:flex;align-items:center;gap:10px;background:var(--dark);color:var(--white);padding:10px 16px;border-radius:6px;margin-bottom:12px;flex-wrap:wrap}
+.bulk-actions-bar #bulk-count{font-size:13px;font-weight:600;color:var(--gold);margin-right:6px}
+.bulk-actions-bar button{font-size:11px;padding:6px 12px}
 .rem-ok{color:var(--green);font-family:var(--serif);font-size:17px;font-weight:600}
 .rem-low{color:var(--orange);font-family:var(--serif);font-size:17px;font-weight:600}
 .rem-out{color:var(--red);font-family:var(--serif);font-size:17px;font-weight:600}
@@ -385,6 +397,7 @@ body{background:var(--offwhite);font-family:var(--sans);color:var(--dark);min-he
       <span class="db-badge" id="db-file-badge" title="Connected Excel file">No file</span>
       <button class="badge-logout" onclick="changeFile()" title="Reload latest data from Supabase" style="font-size:11px">&#8635; Refresh Data</button>
       <button class="tb-btn gold" onclick="exportExcel()">&#8659; Export Excel</button>
+      <button class="tb-btn outline" style="color:rgba(255,255,255,0.85);border-color:rgba(255,255,255,0.3)" onclick="backupAllDataJSON()" title="Download a full JSON backup of every table (offline copy)">&#128190; Backup JSON</button>
       <button class="tb-btn outline" style="color:rgba(255,255,255,0.7);border-color:rgba(255,255,255,0.2)" onclick="document.getElementById('import-file').click()" title="Full restore from a backup Excel file — replaces ALL current data">&#8657; Restore from Excel</button>
       <input type="file" id="import-file" accept=".xlsx" style="display:none" onchange="importExcel(this)"/>
       <button class="badge-logout" onclick="openChangePwd()" title="Change Password">&#128274; Change Password</button>
@@ -412,43 +425,43 @@ body{background:var(--offwhite);font-family:var(--sans);color:var(--dark);min-he
   <button class="tb-btn green" id="tb-add" onclick="openAdd()">&#43; Add Entry</button>
   <button class="tb-btn" id="tb-batch" onclick="openBatch()">&#43; New Batch</button>
   <div class="tb-sep"></div>
-  <select class="tb-select" id="tb-batch-filter" onchange="render()"><option value="">All Batches</option></select>
-  <select class="tb-select" id="tb-status-filter" onchange="render()" style="display:none">
+  <select class="tb-select" id="tb-batch-filter" onchange="filterChanged()"><option value="">All Batches</option></select>
+  <select class="tb-select" id="tb-status-filter" onchange="filterChanged()" style="display:none">
     <option value="">All Status</option>
     <option>Done</option>
     <option>In-Progress</option>
     <option>Pending</option>
     <option>Cancelled</option>
   </select>
-  <select class="tb-select" id="tb-paid-filter" onchange="render()" style="display:none">
+  <select class="tb-select" id="tb-paid-filter" onchange="filterChanged()" style="display:none">
     <option value="">Paid &amp; Unpaid</option>
     <option value="Yes">Paid Only</option>
     <option value="No">Unpaid Only</option>
   </select>
-  <select class="tb-select" id="tb-delivery-filter" onchange="render()" style="display:none">
+  <select class="tb-select" id="tb-delivery-filter" onchange="filterChanged()" style="display:none">
     <option value="">All Delivery</option>
     <option value="Yes">Delivered</option>
     <option value="No">Not Delivered</option>
   </select>
-  <select class="tb-select" id="tb-payment-filter" onchange="render()" style="display:none">
+  <select class="tb-select" id="tb-payment-filter" onchange="filterChanged()" style="display:none">
     <option value="">All Payment Types</option>
     <option value="Cash">Cash</option>
     <option value="Gcash">Gcash</option>
     <option value="Transfer">Transfer</option>
     <option value="N/A">N/A</option>
   </select>
-  <select class="tb-select" id="tb-pur-payment-filter" onchange="render()" style="display:none">
+  <select class="tb-select" id="tb-pur-payment-filter" onchange="filterChanged()" style="display:none">
     <option value="">All Payment Types</option>
     <option value="Cash">Cash</option>
     <option value="Gcash">Gcash</option>
     <option value="Transfer">Transfer</option>
   </select>
-  <select class="tb-select" id="tb-logtype-filter" onchange="render()" style="display:none">
+  <select class="tb-select" id="tb-logtype-filter" onchange="filterChanged()" style="display:none">
     <option value="">All Activity</option>
     <option value="ADD">Additions Only</option>
     <option value="REMOVE">Removals Only</option>
   </select>
-  <input class="tb-search" id="tb-search" placeholder="Search..." oninput="render()"/>
+  <input class="tb-search" id="tb-search" placeholder="Search..." oninput="filterChanged()"/>
   <div class="tb-sep"></div>
   <button class="tb-btn outline" onclick="window.print()">&#128438; Print</button>
   <button class="tb-btn outline" id="tb-export-csv" onclick="exportCSV()">&#8659; CSV</button>
@@ -490,15 +503,25 @@ body{background:var(--offwhite);font-family:var(--sans);color:var(--dark);min-he
       <tbody id="inv-body"></tbody>
     </table>
     <button class="add-row-btn no-print" onclick="openAdd()">&#43; Add fragrance</button>
+    <div class="pagination-bar" id="inv-pagination"></div>
   </div>
 </div>
 
 <!-- ORDERS -->
 <div class="tab-panel" id="panel-orders">
   <div class="stats-row" id="orders-stats"></div>
+  <div class="bulk-actions-bar" id="bulk-actions-bar" style="display:none">
+    <span id="bulk-count">0 selected</span>
+    <button class="tb-btn green" onclick="bulkSetStatus('Done')">Mark as Done</button>
+    <button class="tb-btn" style="background:#DBEAFE;color:#1E40AF;border-color:#DBEAFE" onclick="bulkSetStatus('In-Progress')">Mark In-Progress</button>
+    <button class="tb-btn" style="background:#FEF3C7;color:#92400E;border-color:#FEF3C7" onclick="bulkSetStatus('Pending')">Mark Pending</button>
+    <button class="tb-btn red" onclick="bulkSetStatus('Cancelled')">Cancel Selected</button>
+    <button class="tb-btn red" onclick="clearOrderSelection()">Clear Selection</button>
+  </div>
   <div class="tbl-wrap">
     <table class="tsg-table" id="orders-table">
       <thead><tr>
+        <th class="c no-print"><input type="checkbox" id="orders-select-all" onchange="toggleSelectAllOrders(this.checked)"></th>
         <th onclick="sort('orders','num')">#</th>
         <th onclick="sort('orders','name')">Fragrance</th>
         <th class="r" onclick="sort('orders','price')">Price</th>
@@ -515,6 +538,7 @@ body{background:var(--offwhite);font-family:var(--sans);color:var(--dark);min-he
       <tbody id="orders-body"></tbody>
     </table>
     <button class="add-row-btn no-print" onclick="openAdd()">&#43; Add order</button>
+    <div class="pagination-bar" id="orders-pagination"></div>
   </div>
 </div>
 
@@ -535,6 +559,7 @@ body{background:var(--offwhite);font-family:var(--sans);color:var(--dark);min-he
       <tbody id="purchases-body"></tbody>
     </table>
     <button class="add-row-btn no-print" onclick="openAdd()">&#43; Add purchase</button>
+    <div class="pagination-bar" id="purchases-pagination"></div>
   </div>
 </div>
 
@@ -569,6 +594,7 @@ body{background:var(--offwhite);font-family:var(--sans);color:var(--dark);min-he
       <tbody id="bottles-body"></tbody>
     </table>
     <button class="add-row-btn no-print" onclick="openAdd()">&#43; Add bottle type</button>
+    <div class="pagination-bar" id="bottles-pagination"></div>
   </div>
 </div>
 
@@ -590,6 +616,7 @@ body{background:var(--offwhite);font-family:var(--sans);color:var(--dark);min-he
       <tbody id="catalogue-body"></tbody>
     </table>
     <button class="add-row-btn no-print" onclick="openAdd()">&#43; Add fragrance to catalogue</button>
+    <div class="pagination-bar" id="catalogue-pagination"></div>
   </div>
 </div>
 
@@ -620,6 +647,7 @@ body{background:var(--offwhite);font-family:var(--sans);color:var(--dark);min-he
       <tbody id="costing-body"></tbody>
     </table>
     <button class="add-row-btn no-print" onclick="openAdd()">&#43; Add costing record</button>
+    <div class="pagination-bar" id="costing-pagination"></div>
   </div>
 </div>
 
@@ -641,6 +669,7 @@ body{background:var(--offwhite);font-family:var(--sans);color:var(--dark);min-he
       <tbody id="profit-body"></tbody>
     </table>
     <button class="add-row-btn no-print" onclick="openAdd()">&#43; Add profit entry</button>
+    <div class="pagination-bar" id="profit-pagination"></div>
   </div>
 </div>
 
@@ -663,6 +692,7 @@ body{background:var(--offwhite);font-family:var(--sans);color:var(--dark);min-he
       </tr></thead>
       <tbody id="stocklog-body"></tbody>
     </table>
+    <div class="pagination-bar" id="stocklog-pagination"></div>
   </div>
 </div>
 
@@ -886,6 +916,9 @@ let inv=[], orders=[], purchases=[], batches=[], catalogue=[], costing=[], bottl
 let activeTab='dash', editId=null;
 let currentUsername='';
 let sortState={inv:{k:'batch',d:1},orders:{k:'num',d:1},purchases:{k:'batch',d:1},catalogue:{k:'grade',d:1},costing:{k:'name',d:1},bottles:{k:'size',d:1},profit:{k:'date',d:-1},stocklog:{k:'ts',d:-1}};
+const PAGE_SIZE_OPTIONS=[10,25,50,100];
+let pageState={inv:{page:1,size:25},orders:{page:1,size:25},purchases:{page:1,size:25},bottles:{page:1,size:25},catalogue:{page:1,size:25},costing:{page:1,size:25},profit:{page:1,size:25},stocklog:{page:1,size:25}};
+let selectedOrders=new Set();
 let dbFileHandle = null;   // FileSystemFileHandle — the live Excel file
 let saveTimer    = null;   // debounce timer
 
@@ -1370,6 +1403,7 @@ function switchTab(t){
   const isOrders=t==='orders';
   const isPurchases=t==='purchases';
   const isLog=t==='stocklog';
+  if(!isOrders) selectedOrders.clear();
   document.getElementById('tb-status-filter').style.display=isOrders?'':'none';
   document.getElementById('tb-paid-filter').style.display=isOrders?'':'none';
   document.getElementById('tb-delivery-filter').style.display=isOrders?'':'none';
@@ -1404,6 +1438,44 @@ function renderBatches(){
     batches.forEach(b=>el.innerHTML+=`<option value="${b}"${b===cur&&isFilter?' selected':''}>${b}</option>`);
   });
 }
+
+// ── PAGINATION ───────────────────────────────────────────────────────────────
+function paginate(tab, data){
+  const ps = pageState[tab] || (pageState[tab]={page:1,size:25});
+  const total = data.length;
+  const size = ps.size===Infinity?Math.max(total,1):ps.size;
+  const totalPages = Math.max(1, Math.ceil(total/size));
+  if(ps.page>totalPages) ps.page=totalPages;
+  if(ps.page<1) ps.page=1;
+  const start = (ps.page-1)*size;
+  const pageData = ps.size===Infinity ? data : data.slice(start, start+size);
+  return {
+    pageData, total, totalPages, page:ps.page, size:ps.size,
+    start: total===0?0:start+1,
+    end: ps.size===Infinity?total:Math.min(start+size,total)
+  };
+}
+function renderPaginationBar(tab, info){
+  const el=document.getElementById(tab+'-pagination');
+  if(!el) return;
+  if(info.total===0){el.innerHTML='';return;}
+  el.innerHTML=`
+    <div class="pag-info">Showing ${info.start}&ndash;${info.end} of ${info.total}</div>
+    <div class="pag-controls">
+      <select onchange="setPageSize('${tab}',this.value)">
+        ${PAGE_SIZE_OPTIONS.map(n=>`<option value="${n}"${info.size===n?' selected':''}>${n} / page</option>`).join('')}
+        <option value="all"${info.size===Infinity?' selected':''}>Show All</option>
+      </select>
+      <button ${info.page<=1?'disabled':''} onclick="gotoPage('${tab}',1)" title="First page">&laquo;</button>
+      <button ${info.page<=1?'disabled':''} onclick="gotoPage('${tab}',${info.page-1})">&lsaquo; Prev</button>
+      <span class="pag-page">Page ${info.page} of ${info.totalPages}</span>
+      <button ${info.page>=info.totalPages?'disabled':''} onclick="gotoPage('${tab}',${info.page+1})">Next &rsaquo;</button>
+      <button ${info.page>=info.totalPages?'disabled':''} onclick="gotoPage('${tab}',${info.totalPages})" title="Last page">&raquo;</button>
+    </div>`;
+}
+function gotoPage(tab,p){ if(pageState[tab]) pageState[tab].page=p; render(); }
+function setPageSize(tab,size){ if(!pageState[tab]) return; pageState[tab].size = size==='all'?Infinity:(+size); pageState[tab].page=1; render(); }
+function filterChanged(){ if(pageState[activeTab]) pageState[activeTab].page=1; render(); }
 
 // ── MAIN RENDER ──────────────────────────────────────────────────────────────
 function render(){
@@ -1513,8 +1585,9 @@ function renderInv(){
     <div class="stat-card red"><div class="stat-lbl">Out of Stock</div><div class="stat-val">${outCnt}</div><div class="stat-sub">0 bottles remaining</div></div>
     <div class="stat-card blue"><div class="stat-lbl">Auto-Deducted</div><div class="stat-val">${autoDeducted}</div><div class="stat-sub">From done orders</div></div>`;
   const tbody=document.getElementById('inv-body');
-  if(!data.length){tbody.innerHTML=`<tr><td colspan="6" class="empty-state"><p>No entries found.</p></td></tr>`;return;}
-  tbody.innerHTML=data.map(i=>{
+  if(!data.length){tbody.innerHTML=`<tr><td colspan="6" class="empty-state"><p>No entries found.</p></td></tr>`;document.getElementById('inv-pagination').innerHTML='';return;}
+  const info=paginate('inv',data);
+  tbody.innerHTML=info.pageData.map(i=>{
     const s=getStock(i);
     const min=i.minStock||2;
     const rc=s===0?'row-out':s<=min?'row-low':'';
@@ -1531,6 +1604,7 @@ function renderInv(){
         <button class="act-btn" title="Delete" onclick="delItem('inv','${i.id}')">&#10005;</button>
       </td></tr>`;
   }).join('');
+  renderPaginationBar('inv',info);
 }
 
 // ── ORDERS RENDER ────────────────────────────────────────────────────────────
@@ -1571,11 +1645,13 @@ function renderOrders(){
     <div class="stat-card blue"><div class="stat-lbl">Delivered / Not Yet</div><div class="stat-val" style="font-size:20px"><span style="color:var(--green)">${deliveredCnt}</span> / <span style="color:var(--accent)">${notDeliveredCnt}</span></div><div class="stat-sub">Delivery status</div></div>`;
   const tbody=document.getElementById('orders-body');
   updateFilterChips();
-  if(!data.length){tbody.innerHTML=`<tr><td colspan="12" class="empty-state"><p>No orders found.</p></td></tr>`;return;}
-  tbody.innerHTML=data.map(o=>{
+  if(!data.length){tbody.innerHTML=`<tr><td colspan="13" class="empty-state"><p>No orders found.</p></td></tr>`;document.getElementById('orders-pagination').innerHTML='';updateBulkBar();return;}
+  const info=paginate('orders',data);
+  tbody.innerHTML=info.pageData.map(o=>{
     const rc=o.status==='In-Progress'?'row-progress':o.paid==='No'&&o.status!=='Cancelled'?'row-low':'';
     const statBadge=o.status==='Done'?'badge-green':o.status==='In-Progress'?'badge-blue':'badge-orange';
     return `<tr class="${rc}">
+      <td class="c no-print"><input type="checkbox" class="order-select-cb" data-id="${o.id}" ${selectedOrders.has(o.id)?'checked':''} onchange="toggleOrderSelect('${o.id}',this.checked)"></td>
       <td style="color:var(--lgray);font-size:12px">${o.num||''}</td>
       <td><strong>${esc(o.name)}</strong></td>
       <td class="r" style="font-family:var(--serif);font-size:15px">${fmt(o.price)}</td>
@@ -1592,6 +1668,60 @@ function renderOrders(){
         <button class="act-btn" onclick="delItem('orders','${o.id}')">&#10005;</button>
       </td></tr>`;
   }).join('');
+  renderPaginationBar('orders',info);
+  const allOnPageChecked = info.pageData.length>0 && info.pageData.every(o=>selectedOrders.has(o.id));
+  const selectAllCb=document.getElementById('orders-select-all');
+  if(selectAllCb) selectAllCb.checked=allOnPageChecked;
+  updateBulkBar();
+}
+
+// ── BULK ORDER SELECTION & STATUS UPDATE ──────────────────────────────────────
+function toggleOrderSelect(id,checked){
+  if(checked) selectedOrders.add(id); else selectedOrders.delete(id);
+  updateBulkBar();
+}
+function toggleSelectAllOrders(checked){
+  document.querySelectorAll('.order-select-cb').forEach(cb=>{
+    const id=cb.dataset.id;
+    if(checked){selectedOrders.add(id);cb.checked=true;}
+    else{selectedOrders.delete(id);cb.checked=false;}
+  });
+  updateBulkBar();
+}
+function clearOrderSelection(){ selectedOrders.clear(); render(); }
+function updateBulkBar(){
+  const bar=document.getElementById('bulk-actions-bar');
+  if(!bar) return;
+  if(selectedOrders.size>0){
+    bar.style.display='flex';
+    document.getElementById('bulk-count').textContent=selectedOrders.size+' selected';
+  } else {
+    bar.style.display='none';
+  }
+}
+function bulkSetStatus(newStatus){
+  if(!selectedOrders.size) return;
+  const ids=[...selectedOrders];
+  if(!confirm(`Mark ${ids.length} order(s) as "${newStatus}"? This will also adjust stock where needed.`)) return;
+  let changed=0;
+  ids.forEach(id=>{
+    const o=orders.find(x=>x.id===id);
+    if(!o || o.status===newStatus) return;
+    const wasDone=o.status==='Done';
+    const wasDeducted=!!o.stockDeducted;
+    o.status=newStatus;
+    if(newStatus==='Done' && !wasDeducted){
+      deductOnDone(o.name,o);
+      o.stockDeducted=true;
+    } else if(wasDone && newStatus!=='Done' && wasDeducted){
+      restoreStocks(o.name,o);
+      o.stockDeducted=false;
+    }
+    changed++;
+  });
+  selectedOrders.clear();
+  save(); render();
+  alert(`Updated ${changed} order(s) to "${newStatus}".`);
 }
 
 // ── PURCHASES RENDER ─────────────────────────────────────────────────────────
@@ -1619,9 +1749,10 @@ function renderPurchases(){
     <div class="stat-card green"><div class="stat-lbl">Batch Count</div><div class="stat-val">${batches.length}</div><div class="stat-sub">Active batch groups</div></div>
     <div class="stat-card orange"><div class="stat-lbl">Avg per Record</div><div class="stat-val" style="font-size:20px">${data.length?fmt(totalPur/data.length):fmt(0)}</div><div class="stat-sub">${isFiltered?'Per filtered purchase':'Per purchase'}</div></div>`;
   const tbody=document.getElementById('purchases-body');
-  if(!data.length){tbody.innerHTML=`<tr><td colspan="7" class="empty-state"><p>No purchases found.</p></td></tr>`;return;}
+  if(!data.length){tbody.innerHTML=`<tr><td colspan="7" class="empty-state"><p>No purchases found.</p></td></tr>`;document.getElementById('purchases-pagination').innerHTML='';return;}
+  const info=paginate('purchases',data);
   const payBadge={Cash:'badge-green',Gcash:'badge-blue',Transfer:'badge-orange'};
-  tbody.innerHTML=data.map(p=>`<tr>
+  tbody.innerHTML=info.pageData.map(p=>`<tr>
     <td><span class="badge badge-dark">${esc(p.batch)}</span></td>
     <td>${esc(p.item)}</td>
     <td class="c">${p.qty}</td>
@@ -1632,6 +1763,7 @@ function renderPurchases(){
       <button class="act-btn" onclick="openEdit('purchases','${p.id}')">&#9998;</button>
       <button class="act-btn" onclick="delItem('purchases','${p.id}')">&#10005;</button>
     </td></tr>`).join('');
+  renderPaginationBar('purchases',info);
 }
 
 // ── PROFIT TRACKER RENDER (manual, standalone — never reads orders/purchases) ──
@@ -1652,8 +1784,9 @@ function renderProfit(){
     <div class="stat-card gold" style="border-left-color:var(--gold)"><div class="stat-lbl">This Month</div><div class="stat-val">${fmt(thisMonth)}</div><div class="stat-sub">${now.toLocaleString('en-PH',{month:'long',year:'numeric'})}</div></div>
     <div class="stat-card blue"><div class="stat-lbl">Average per Entry</div><div class="stat-val" style="font-size:20px">${profitEntries.length?fmt(total/profitEntries.length):fmt(0)}</div><div class="stat-sub">Per record</div></div>`;
   const tbody=document.getElementById('profit-body');
-  if(!data.length){tbody.innerHTML=`<tr><td colspan="5" class="empty-state"><p>No profit entries yet. This log is separate from Dashboard/Orders profit — add entries manually.</p></td></tr>`;return;}
-  tbody.innerHTML=data.map(p=>`<tr>
+  if(!data.length){tbody.innerHTML=`<tr><td colspan="5" class="empty-state"><p>No profit entries yet. This log is separate from Dashboard/Orders profit — add entries manually.</p></td></tr>`;document.getElementById('profit-pagination').innerHTML='';return;}
+  const info=paginate('profit',data);
+  tbody.innerHTML=info.pageData.map(p=>`<tr>
     <td style="font-size:12px;color:var(--gray)">${esc(p.date||'')}</td>
     <td><strong>${esc(p.description)}</strong></td>
     <td class="r" style="font-family:var(--serif);font-size:15px;font-weight:600;color:var(--green)">${fmt(p.amount)}</td>
@@ -1662,6 +1795,7 @@ function renderProfit(){
       <button class="act-btn" onclick="openEdit('profit','${p.id}')">&#9998;</button>
       <button class="act-btn" onclick="delItem('profit','${p.id}')">&#10005;</button>
     </td></tr>`).join('');
+  renderPaginationBar('profit',info);
 }
 
 // ── STOCK HISTORY / AUDIT LOG RENDER ────────────────────────────────────────
@@ -1687,8 +1821,9 @@ function renderStockLog(){
     <div class="stat-card red"><div class="stat-lbl">Stock Removed</div><div class="stat-val">${removes}</div><div class="stat-sub">Deduction events</div></div>
     <div class="stat-card blue"><div class="stat-lbl">Today</div><div class="stat-val">${todayCount}</div><div class="stat-sub">Logged today</div></div>`;
   const tbody=document.getElementById('stocklog-body');
-  if(!data.length){tbody.innerHTML=`<tr><td colspan="7" class="empty-state"><p>No stock activity logged yet.</p></td></tr>`;return;}
-  tbody.innerHTML=data.map(s=>{
+  if(!data.length){tbody.innerHTML=`<tr><td colspan="7" class="empty-state"><p>No stock activity logged yet.</p></td></tr>`;document.getElementById('stocklog-pagination').innerHTML='';return;}
+  const info=paginate('stocklog',data);
+  tbody.innerHTML=info.pageData.map(s=>{
     const isAdd=s.type==='ADD';
     return `<tr>
       <td style="font-size:12px;color:var(--gray)">${esc(new Date(s.ts).toLocaleString('en-PH'))}</td>
@@ -1700,6 +1835,7 @@ function renderStockLog(){
       <td style="font-size:12px;color:var(--gray)">${esc(s.reason||'')}</td>
     </tr>`;
   }).join('');
+  renderPaginationBar('stocklog',info);
 }
 
 // ── SORT ─────────────────────────────────────────────────────────────────────
@@ -2249,6 +2385,36 @@ async function exportExcel(){
   XLSX.writeFile(XLSX.read(buf,{type:'array'}),'TSG_Database_'+new Date().toISOString().slice(0,10)+'.xlsx');
 }
 
+// ── JSON BACKUP (full offline snapshot of every table) ────────────────────────
+function backupAllDataJSON(){
+  const backup={
+    _meta:{
+      app:'TSG Business Management',
+      exportedAt:new Date().toISOString(),
+      exportedBy:currentUsername||'',
+      format:'json-backup-v1'
+    },
+    inventory:inv,
+    bottleStock:bottleStock,
+    orders:orders,
+    purchases:purchases,
+    batches:batches,
+    catalogue:catalogue,
+    costing:costing,
+    profitEntries:profitEntries,
+    stockLog:stockLog
+  };
+  const blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='TSG_Backup_'+new Date().toISOString().slice(0,10)+'.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 // ── IMPORT EXCEL ─────────────────────────────────────────────────────────────
 async function importExcel(input){
   const file=input.files[0]; if(!file) return;
@@ -2346,8 +2512,9 @@ function renderCatalogue(){
     <div class="stat-card"><div class="stat-lbl">Everyday (₱325)</div><div class="stat-val">${catalogue.filter(c=>c.grade==='Everyday').length}</div></div>
     <div class="stat-card orange"><div class="stat-lbl">Clearance (₱300)</div><div class="stat-val">${catalogue.filter(c=>c.grade==='Clearance').length}</div></div>`;
   const tbody=document.getElementById('catalogue-body');
-  if(!data.length){tbody.innerHTML=`<tr><td colspan="8" class="empty-state"><p>No fragrances found.</p></td></tr>`;return;}
-  tbody.innerHTML=data.map(c=>`<tr>
+  if(!data.length){tbody.innerHTML=`<tr><td colspan="8" class="empty-state"><p>No fragrances found.</p></td></tr>`;document.getElementById('catalogue-pagination').innerHTML='';return;}
+  const info=paginate('catalogue',data);
+  tbody.innerHTML=info.pageData.map(c=>`<tr>
     <td><span class="badge ${gradeColors[c.grade]||'badge-dark'}">${esc(c.grade)}</span></td>
     <td><span style="font-size:11px;color:var(--gray)">${esc(c.gender)}</span></td>
     <td><strong>${esc(c.name)}</strong></td>
@@ -2359,6 +2526,7 @@ function renderCatalogue(){
       <button class="act-btn" onclick="openEdit('catalogue','${c.id}')">&#9998;</button>
       <button class="act-btn" onclick="delItem('catalogue','${c.id}')">&#10005;</button>
     </td></tr>`).join('');
+  renderPaginationBar('catalogue',info);
 }
 
 // ── COSTING RENDER ───────────────────────────────────────────────────────────
@@ -2387,8 +2555,9 @@ function renderCosting(){
     <div class="stat-card"><div class="stat-lbl">Standard Markup</div><div class="stat-val">100%</div><div class="stat-sub">Cost × 2 = Price</div></div>
     <div class="stat-card gold" style="border-left-color:var(--gold)"><div class="stat-lbl">Formula</div><div class="stat-val" style="font-size:13px;font-family:var(--sans);line-height:1.4">Oil+Fix+Alc<br/>+Mois+Box+Lbl</div></div>`;
   const tbody=document.getElementById('costing-body');
-  if(!data.length){tbody.innerHTML=`<tr><td colspan="12" class="empty-state"><p>No costing records. Add one to track your costs.</p></td></tr>`;return;}
-  tbody.innerHTML=data.map(c=>{
+  if(!data.length){tbody.innerHTML=`<tr><td colspan="12" class="empty-state"><p>No costing records. Add one to track your costs.</p></td></tr>`;document.getElementById('costing-pagination').innerHTML='';return;}
+  const info=paginate('costing',data);
+  tbody.innerHTML=info.pageData.map(c=>{
     const{total,sellPrice,profit}=calcCostTotal(c);
     return`<tr>
       <td><strong>${esc(c.name)}</strong>${c.notes?`<div style="font-size:11px;color:var(--lgray)">${esc(c.notes)}</div>`:''}
@@ -2408,6 +2577,7 @@ function renderCosting(){
         <button class="act-btn" onclick="delItem('costing','${c.id}')">&#10005;</button>
       </td></tr>`;
   }).join('');
+  renderPaginationBar('costing',info);
 }
 
 // ── CATALOGUE SAVE ────────────────────────────────────────────────────────────
@@ -2603,8 +2773,9 @@ function renderBottles(){
     <div class="stat-card red"><div class="stat-lbl">Total Used</div><div class="stat-val">${totalUsed}</div><div class="stat-sub">From done orders</div></div>
     <div class="stat-card orange"><div class="stat-lbl">Low Stock</div><div class="stat-val">${lowCnt}</div><div class="stat-sub">5 or fewer left</div></div>`;
   const tbody = document.getElementById('bottles-body');
-  if(!data.length){tbody.innerHTML=`<tr><td colspan="7" class="empty-state"><p>No bottle types yet. Add one above.</p></td></tr>`;return;}
-  tbody.innerHTML = data.map(b=>{
+  if(!data.length){tbody.innerHTML=`<tr><td colspan="7" class="empty-state"><p>No bottle types yet. Add one above.</p></td></tr>`;document.getElementById('bottles-pagination').innerHTML='';return;}
+  const info=paginate('bottles',data);
+  tbody.innerHTML = info.pageData.map(b=>{
     const s=+b.stock||0;
     const rc=s===0?'row-out':s<=5?'row-low':'';
     const vc=s===0?'rem-out':s<=5?'rem-low':'rem-ok';
@@ -2621,6 +2792,7 @@ function renderBottles(){
         <button class="act-btn" title="Delete" onclick="delItem('bottles','${b.id}')">&#10005;</button>
       </td></tr>`;
   }).join('');
+  renderPaginationBar('bottles',info);
 }
 
 function saveBottle(){
