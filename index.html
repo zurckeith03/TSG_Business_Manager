@@ -258,7 +258,8 @@ body{background:var(--offwhite);font-family:var(--sans);color:var(--dark);min-he
   body{background:white}
   .page-header,.tsg-table thead tr{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
   *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
-  .tab-panel{display:block!important;padding:8px 0}
+  .tab-panel{display:none!important}
+  .tab-panel.active{display:block!important;padding:8px 0}
   @page{margin:0.5in}
 }
 
@@ -312,6 +313,232 @@ body{background:var(--offwhite);font-family:var(--sans);color:var(--dark);min-he
   .hdr-sub{font-size:9px}
   .db-badge{display:none}
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   QUOTATION BUILDER MODULE (Invoice / Quotation / Contract / Manage Packages)
+   All classes/ids below are qb-prefixed to avoid colliding with the rest
+   of the app. Reuses the main app's :root color/font variables.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* PRINT */
+@media print {
+  .qb-no-print,.qb-toolbar,.qb-tab-nav{display:none!important}
+  body{background:white!important;padding:0!important}
+  .qb-tab-panel{display:block!important}
+  .qb-tab-panel.qb-hidden-tab{display:none!important}
+  .qb-invoice-card,.qb-quotation-card{box-shadow:none!important;max-width:100%!important}
+  [contenteditable]{border:none!important;outline:none!important;background:transparent!important;padding:0!important}
+  .qb-del-row,.qb-add-row-btn,.qb-inc-toggle,.qb-pkg-toggle,.qb-confirm-bar{display:none!important}
+  .qb-date-input{border:none!important;background:transparent!important;-webkit-appearance:none;appearance:none;padding:0!important}
+  .qb-date-input::-webkit-calendar-picker-indicator{display:none!important}
+  @page{margin:0.5in}
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+  .qb-inv-header,.qb-inv-footer{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  .qb-accent-stripe{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  table.qb-items thead tr, table.qb-pkg-table thead tr{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  .qb-date-chip,.qb-inc-item,.qb-event-cell,.qb-contract-section{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  .qb-deposit-box{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  .qb-inv-status{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  .qb-selected-summary{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;display:block!important}
+  .qb-pkg-selected{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+}
+
+.qb-scope{background:var(--offwhite);font-family:var(--sans);color:var(--dark);min-height:100vh;padding:0}
+
+/* TOOLBAR */
+.qb-toolbar{background:var(--mid);padding:10px 24px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;flex-wrap:wrap}
+.qb-toolbar-brand{font-family:var(--serif);font-size:16px;color:var(--gold);letter-spacing:0.08em;margin-right:auto}
+.qb-tb-btn{background:transparent;border:1px solid rgba(255,255,255,0.2);color:#fff;padding:7px 16px;font-family:var(--sans);font-size:11px;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.qb-tb-btn:hover{background:rgba(255,255,255,0.08)}
+.qb-tb-btn.qb-active{background:var(--accent);border-color:var(--accent)}
+.qb-tb-btn.qb-gold{background:var(--gold);border-color:var(--gold);color:var(--dark);font-weight:500}
+.qb-tb-btn.qb-gold:hover{opacity:0.9}
+.qb-tb-btn.qb-green{background:#2E7D52;border-color:#2E7D52;color:#fff}
+.qb-tb-btn.qb-green:hover{background:#256644}
+.qb-tb-sep{width:1px;height:24px;background:rgba(255,255,255,0.15);flex-shrink:0}
+.qb-edit-hint{font-size:11px;color:rgba(255,255,255,0.4);font-style:italic}
+
+/* TABS */
+.qb-tab-nav{background:var(--dark);display:flex;border-bottom:3px solid var(--accent);max-width:860px;margin:0 auto;padding:0 20px}
+.qb-tab-btn{padding:12px 28px;font-family:var(--sans);font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:var(--lgray);background:none;border:none;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-3px}
+.qb-tab-btn:hover{color:var(--white)}
+.qb-tab-btn.qb-active{color:var(--gold);border-bottom-color:var(--gold);font-weight:500}
+
+/* TAB PANELS */
+.qb-tab-panel{display:none;padding:32px 20px 60px;max-width:860px;margin:0 auto}
+.qb-tab-panel.qb-active-tab{display:block}
+
+/* EDIT MODE */
+.qb-edit-mode [contenteditable]{outline:none;border-bottom:1.5px dashed var(--accent);cursor:text;min-width:30px;display:inline-block}
+.qb-edit-mode [contenteditable]:focus{background:rgba(233,69,96,0.05);border-bottom-style:solid}
+.qb-edit-mode [contenteditable]:empty::before{content:attr(data-ph);color:var(--lgray);font-style:italic}
+.qb-edit-mode .qb-add-row-btn{display:flex!important}
+.qb-edit-mode .qb-del-row{display:inline-flex!important}
+.qb-edit-mode .qb-inc-toggle{display:inline-block!important}
+.qb-edit-mode .qb-pkg-toggle{display:inline-flex!important}
+.qb-add-row-btn{display:none;align-items:center;gap:6px;padding:10px 16px;background:none;border:none;color:var(--accent);font-family:var(--sans);font-size:12px;cursor:pointer;border-top:1px dashed var(--line);width:100%}
+.qb-add-row-btn:hover{background:rgba(233,69,96,0.04)}
+.qb-del-row{display:none;background:none;border:none;color:var(--lgray);cursor:pointer;padding:2px 6px;font-size:16px;line-height:1}
+.qb-del-row:hover{color:var(--accent)}
+.qb-inc-toggle,.qb-pkg-toggle{display:none;background:none;border:1px solid var(--line);color:var(--gray);font-size:10px;padding:2px 8px;cursor:pointer;font-family:var(--sans);flex-shrink:0}
+.qb-inc-toggle:hover,.qb-pkg-toggle:hover{border-color:var(--accent);color:var(--accent)}
+.qb-inc-row{display:flex;justify-content:space-between;padding:8px 0;font-size:13px;border-bottom:1px solid var(--line);color:var(--gray);align-items:center;gap:8px}
+.qb-inc-row.qb-row-hidden{display:none}
+.qb-edit-mode .qb-inc-row.qb-row-hidden{display:flex!important;opacity:0.38}
+
+/* CARD */
+.qb-invoice-card,.qb-quotation-card{background:var(--white);box-shadow:0 4px 40px rgba(26,26,46,0.10)}
+
+/* HEADER */
+.qb-inv-header{background:var(--dark);padding:44px 52px 36px;display:flex;justify-content:space-between;align-items:flex-start;gap:24px}
+.qb-brand-name{font-family:var(--serif);font-size:30px;font-weight:300;color:var(--white);letter-spacing:0.08em;line-height:1}
+.qb-brand-tagline{font-size:10px;letter-spacing:0.22em;color:var(--gold);text-transform:uppercase;margin-top:6px}
+.qb-inv-meta{text-align:right}
+.qb-inv-label{font-family:var(--serif);font-size:36px;font-weight:300;color:var(--white);letter-spacing:0.06em;line-height:1}
+.qb-inv-number{font-size:12px;color:var(--lgray);margin-top:6px;letter-spacing:0.10em}
+.qb-inv-status{display:inline-block;margin-top:10px;background:var(--accent);color:var(--white);font-size:10px;font-weight:500;letter-spacing:0.16em;text-transform:uppercase;padding:4px 12px}
+.qb-accent-stripe{height:4px;background:linear-gradient(90deg,var(--accent) 0%,var(--gold) 100%)}
+
+/* BODY */
+.qb-inv-body{padding:44px 52px}
+.qb-parties-row{display:grid;grid-template-columns:1fr 1px 1fr;margin-bottom:44px}
+.qb-party-divider{background:var(--line);margin:0 32px}
+.qb-party-tag{font-size:9px;letter-spacing:0.22em;text-transform:uppercase;color:var(--accent);font-weight:500;margin-bottom:12px}
+.qb-party-name{font-family:var(--serif);font-size:20px;color:var(--dark);margin-bottom:4px}
+.qb-party-detail{font-size:13px;color:var(--gray);line-height:1.7}
+.qb-party-detail > span{display:block}
+.qb-date-row{display:flex;gap:12px;margin-bottom:40px;padding-bottom:32px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.qb-date-chip{background:var(--offwhite);padding:14px 18px;flex:1;min-width:110px;border-left:3px solid var(--gold)}
+.qb-date-chip-label{font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--lgray);margin-bottom:4px}
+.qb-date-chip-value{font-family:var(--serif);font-size:16px;color:var(--dark)}
+.qb-date-input{font-family:var(--serif);font-size:16px;color:var(--dark);border:none;background:transparent;padding:2px 0;width:100%;cursor:pointer}
+.qb-date-input:focus{outline:none;border-bottom:1.5px dashed var(--accent)}
+.qb-event-grid{display:grid;grid-template-columns:1fr 1fr 1fr;border:1px solid var(--line)}
+.qb-event-cell{padding:14px 18px;border-right:1px solid var(--line)}
+.qb-event-cell:last-child{border-right:none}
+.qb-event-cell-label{font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--lgray);margin-bottom:4px}
+.qb-event-cell-value{font-family:var(--serif);font-size:15px;color:var(--dark)}
+.qb-section-label{font-size:9px;letter-spacing:0.22em;text-transform:uppercase;color:var(--accent);font-weight:500;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+
+/* TABLES */
+table.qb-items{width:100%;border-collapse:collapse;font-size:13px}
+table.qb-items thead tr{background:var(--dark)}
+table.qb-items thead th{padding:12px 16px;text-align:left;font-size:9px;font-weight:500;letter-spacing:0.18em;text-transform:uppercase;color:var(--lgray);font-family:var(--sans)}
+table.qb-items thead th.qb-r{text-align:right}
+table.qb-items tbody tr{border-bottom:1px solid var(--line)}
+table.qb-items tbody tr:nth-child(even){background:var(--offwhite)}
+table.qb-items tbody td{padding:13px 16px;vertical-align:middle;color:var(--dark)}
+table.qb-items tbody td.qb-r{text-align:right}
+.qb-item-name{font-family:var(--serif);font-size:15px;display:block;margin-bottom:2px}
+.qb-item-sub{font-size:11px;color:var(--lgray)}
+.qb-amount-cell{font-weight:500}
+.qb-selected-badge{display:inline-block;background:var(--dark);color:var(--gold);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;padding:2px 8px;margin-left:6px;vertical-align:middle}
+
+/* PACKAGE TABLE (QUOTATION) */
+table.qb-pkg-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:8px}
+table.qb-pkg-table thead tr{background:var(--dark)}
+table.qb-pkg-table thead th{padding:11px 14px;text-align:left;font-size:9px;font-weight:500;letter-spacing:0.18em;text-transform:uppercase;color:var(--lgray)}
+table.qb-pkg-table thead th.qb-r{text-align:right}
+table.qb-pkg-table tbody tr{border-bottom:1px solid var(--line);transition:background 0.15s}
+table.qb-pkg-table tbody tr:nth-child(even){background:var(--offwhite)}
+table.qb-pkg-table tbody tr.qb-pkg-selected{background:#FFF6F0!important;outline:2px solid var(--accent);outline-offset:-2px}
+table.qb-pkg-table tbody tr.qb-pkg-hidden{display:none}
+.qb-edit-mode table.qb-pkg-table tbody tr.qb-pkg-hidden{display:table-row!important;opacity:0.35}
+table.qb-pkg-table tbody td{padding:13px 14px;vertical-align:middle;color:var(--dark)}
+table.qb-pkg-table tbody td.qb-r{text-align:right}
+.qb-pkg-select-btn{background:none;border:1px solid var(--line);color:var(--gray);font-size:10px;padding:4px 10px;cursor:pointer;font-family:var(--sans);white-space:nowrap}
+.qb-pkg-select-btn:hover{border-color:var(--accent);color:var(--accent)}
+.qb-pkg-selected .qb-pkg-select-btn{background:var(--accent);border-color:var(--accent);color:white}
+
+/* TOTALS */
+.qb-totals-block{display:flex;justify-content:flex-end;margin-bottom:40px}
+.qb-totals-inner{width:320px}
+.qb-totals-row{display:flex;justify-content:space-between;padding:8px 0;font-size:13px;border-bottom:1px solid var(--line);color:var(--gray)}
+.qb-totals-row.qb-grand{padding:14px 0 0;color:var(--dark);font-weight:500;border-bottom:none}
+.qb-totals-row.qb-grand .qb-t-label{font-family:var(--serif);font-size:18px;font-style:italic}
+.qb-totals-row.qb-grand .qb-t-value{font-family:var(--serif);font-size:22px;color:var(--accent);font-weight:600}
+.qb-deposit-box{margin-top:10px;background:#FFF6F0;border-left:3px solid var(--accent);padding:10px 14px;display:flex;justify-content:space-between;align-items:center}
+.qb-deposit-label{font-size:11px;color:var(--accent);letter-spacing:0.08em;text-transform:uppercase}
+.qb-deposit-value{font-family:var(--serif);font-size:17px;color:var(--accent);font-weight:600}
+
+/* INCLUSIONS */
+.qb-inclusions-section{margin-bottom:36px;padding-bottom:36px;border-bottom:1px solid var(--line)}
+.qb-inc-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.qb-inc-item{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:var(--offwhite);border-left:2px solid var(--gold)}
+.qb-inc-item.qb-full{grid-column:1/-1}
+.qb-website-inc{display:none}
+.qb-website-inc.qb-visible{display:flex}
+.qb-inc-num{font-family:var(--serif);font-size:20px;color:var(--gold);font-weight:300;line-height:1;min-width:24px}
+.qb-inc-title{font-size:12px;font-weight:500;color:var(--dark);margin-bottom:2px}
+.qb-inc-desc{font-size:11px;color:var(--gray);line-height:1.5}
+
+/* TERMS */
+.qb-terms-section{margin-bottom:40px}
+.qb-terms-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;margin-top:14px}
+.qb-term-item{font-size:12px;color:var(--gray);line-height:1.6;padding-left:10px;border-left:1.5px solid var(--line)}
+.qb-term-item strong{color:var(--dark);font-weight:500;display:block;margin-bottom:1px}
+
+/* INFO TABLE (QUOTATION CLIENT BLOCK) */
+table.qb-info-table{width:100%;border-collapse:collapse;margin-bottom:32px}
+table.qb-info-table td{padding:11px 14px;font-size:13px;border-bottom:1px solid var(--line)}
+table.qb-info-table td:first-child{font-weight:500;color:var(--dark);background:var(--offwhite);width:36%;font-size:12px;letter-spacing:0.04em}
+table.qb-info-table td:last-child{color:var(--dark);min-width:120px}
+table.qb-info-table td:last-child:empty::before,
+table.qb-info-table td[data-empty="true"]::before{content:attr(data-ph);color:var(--lgray);font-style:italic;font-size:13px}
+.qb-edit-mode table.qb-info-table td:last-child{border-bottom:1.5px dashed var(--accent);cursor:text}
+.qb-edit-mode table.qb-info-table td:last-child:focus{background:rgba(233,69,96,0.04);border-bottom-style:solid;outline:none}
+
+/* CONTRACT */
+.qb-contract-section{border:1px solid var(--line);padding:28px 32px;margin-bottom:36px;background:var(--offwhite)}
+.qb-contract-title{font-family:var(--serif);font-size:18px;color:var(--dark);margin-bottom:6px}
+.qb-contract-body{font-size:13px;color:var(--gray);line-height:1.8;margin-bottom:20px}
+.qb-contract-fields{display:grid;grid-template-columns:1fr 1fr;gap:16px 32px;margin-bottom:24px}
+.qb-cf-label{font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--lgray);margin-bottom:6px}
+.qb-cf-value{font-family:var(--serif);font-size:15px;color:var(--dark);border-bottom:1px solid var(--dark);padding-bottom:4px;min-height:28px}
+
+/* SIGNATURE */
+.qb-sig-section{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-bottom:44px;padding-top:20px;border-top:1px solid var(--line)}
+.qb-sig-line{height:1px;background:var(--dark);margin-bottom:8px;margin-top:48px}
+.qb-sig-label{font-size:11px;color:var(--lgray);letter-spacing:0.08em}
+
+/* FOOTER */
+.qb-inv-footer{background:var(--dark);padding:24px 52px;display:flex;justify-content:space-between;align-items:center}
+.qb-footer-note{font-size:11px;color:var(--lgray);font-style:italic;font-family:var(--serif)}
+.qb-footer-tagline{font-size:10px;letter-spacing:0.18em;color:var(--gold);text-transform:uppercase}
+
+/* CONFIRM BAR */
+.qb-confirm-bar{background:var(--white);border:1px solid var(--line);border-left:4px solid #2E7D52;padding:16px 24px;display:flex;align-items:center;gap:16px;margin-top:20px;flex-wrap:wrap}
+.qb-confirm-bar-text{flex:1;font-size:13px;color:var(--gray)}
+.qb-confirm-bar-text strong{color:var(--dark);display:block;margin-bottom:2px}
+.qb-confirm-check{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dark);cursor:pointer}
+.qb-confirm-check input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
+
+/* MODAL */
+.qb-modal-overlay{display:none;position:fixed;inset:0;background:rgba(26,26,46,0.6);z-index:999;align-items:center;justify-content:center}
+.qb-modal-overlay.qb-open{display:flex}
+.qb-modal-box{background:var(--white);padding:40px;max-width:440px;width:90%;text-align:center}
+.qb-modal-icon{font-size:40px;margin-bottom:12px}
+.qb-modal-title{font-family:var(--serif);font-size:24px;color:var(--dark);margin-bottom:8px}
+.qb-modal-body{font-size:13px;color:var(--gray);line-height:1.7;margin-bottom:28px}
+.qb-modal-actions{display:flex;gap:12px;justify-content:center}
+.qb-modal-btn{padding:11px 28px;font-family:var(--sans);font-size:12px;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;border:1px solid var(--line)}
+.qb-modal-btn.qb-primary{background:var(--dark);color:var(--white);border-color:var(--dark)}
+.qb-modal-btn.qb-primary:hover{background:var(--accent);border-color:var(--accent)}
+.qb-modal-btn.qb-secondary{background:none;color:var(--gray)}
+.qb-modal-btn.qb-secondary:hover{border-color:var(--dark);color:var(--dark)}
+
+/* SELECTED SUMMARY (QUOTATION) */
+.qb-selected-summary{background:var(--dark);padding:16px 20px;margin-bottom:0;display:none}
+.qb-selected-summary.qb-visible{display:block}
+.qb-ss-label{font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);margin-bottom:6px}
+.qb-ss-value{font-family:var(--serif);font-size:20px;color:var(--white)}
+
+/* Empty field line (replaces ugly dashes) */
+.qb-empty-field{display:inline-block;min-width:160px;height:1px;background:var(--dark);vertical-align:middle;opacity:0.22;margin-left:2px}
+
+/* Tab panel hidden */
+.qb-tab-panel.qb-hidden-tab{display:none}
+
 </style>
 </head>
 
@@ -418,6 +645,7 @@ body{background:var(--offwhite);font-family:var(--sans);color:var(--dark);min-he
   <button class="tab-btn" id="tab-costing" onclick="switchTab('costing')">Perfume Costing</button>
   <button class="tab-btn" id="tab-profit" onclick="switchTab('profit')">Profit Tracker</button>
   <button class="tab-btn" id="tab-stocklog" onclick="switchTab('stocklog')">Stock History</button>
+  <button class="tab-btn" id="tab-docs" onclick="switchTab('docs')">Quotation Builder</button>
 </div>
 
 <!-- TOOLBAR -->
@@ -471,6 +699,7 @@ body{background:var(--offwhite);font-family:var(--sans);color:var(--dark);min-he
 
 <!-- DASHBOARD -->
 <div class="tab-panel active" id="panel-dash">
+  <div id="dash-filter-banner" style="display:none;background:var(--white);padding:12px 20px;border-left:4px solid var(--gold);margin-bottom:16px;font-size:13px;color:var(--gray)"></div>
   <div class="stats-row" id="dash-stats"></div>
   <div class="profit-box" id="dash-profit" style="margin-bottom:24px"></div>
   <div class="dash-row">
@@ -516,7 +745,7 @@ body{background:var(--offwhite);font-family:var(--sans);color:var(--dark);min-he
     <button class="tb-btn" style="background:#DBEAFE;color:#1E40AF;border-color:#DBEAFE" onclick="bulkSetStatus('In-Progress')">Mark In-Progress</button>
     <button class="tb-btn" style="background:#FEF3C7;color:#92400E;border-color:#FEF3C7" onclick="bulkSetStatus('Pending')">Mark Pending</button>
     <button class="tb-btn red" onclick="bulkSetStatus('Cancelled')">Cancel Selected</button>
-    <button class="tb-btn red" onclick="clearOrderSelection()">Clear Selection</button>
+    <button class="tb-btn outline" onclick="clearOrderSelection()">Clear Selection</button>
   </div>
   <div class="tbl-wrap">
     <table class="tsg-table" id="orders-table">
@@ -694,6 +923,385 @@ body{background:var(--offwhite);font-family:var(--sans);color:var(--dark);min-he
     </table>
     <div class="pagination-bar" id="stocklog-pagination"></div>
   </div>
+</div>
+
+
+<!-- QUOTATION BUILDER (Invoice / Quotation / Contract / Manage Packages) -->
+<div class="tab-panel" id="panel-docs" style="padding:0">
+<div class="qb-scope">
+<!-- TOOLBAR -->
+<div class="qb-toolbar qb-no-print">
+  <span class="qb-toolbar-brand">The Scent Gallery</span>
+  <span class="qb-edit-hint" id="qb-hint-inv">Click Edit to customize</span>
+  <div class="qb-tb-sep"></div>
+  <button class="qb-tb-btn" id="qb-btn-edit-inv" onclick="qbToggleEdit()">&#9998; Edit</button>
+  <button class="qb-tb-btn" id="qb-btn-add-inv" onclick="qbAddRow('inv')">+ Add Item</button>
+  <div class="qb-tb-sep"></div>
+  <button class="qb-tb-btn qb-gold" id="qb-btn-print-inv" onclick="qbPrintTab(qbActiveTab==='pkgs'?'pkgs':'inv')">&#128438; Print / PDF</button>
+</div>
+
+<div class="qb-tab-nav qb-no-print">
+  <button class="qb-tab-btn qb-active" id="qb-tab-inv" onclick="qbSwitchTab('inv')">Invoice</button>
+  <button class="qb-tab-btn" id="qb-tab-quot" onclick="qbSwitchTab('quot')">Quotation</button>
+  <button class="qb-tab-btn" id="qb-tab-cont" onclick="qbSwitchTab('cont')">Contract</button>
+  <button class="qb-tab-btn" id="qb-tab-pkgs" onclick="qbSwitchTab('pkgs')">Manage Packages</button>
+</div>
+
+<div class="qb-tab-panel qb-active-tab" id="qb-panel-inv">
+<div class="qb-invoice-card" id="qb-invoice">
+  <div class="qb-inv-header">
+    <div>
+      <img src="logo.png" alt="the scent gallery" style="height:auto;width:auto;filter:invert(1);display:block;margin-bottom:6px"/>
+	 </div>
+    <div class="qb-inv-meta">
+      <div class="qb-inv-label">Invoice</div>
+      <div class="qb-inv-number" contenteditable="false" data-ph="INV-2026-001">No. INV-2026-001</div>
+      <div class="qb-inv-status" contenteditable="false" data-ph="Status">Awaiting Payment</div>
+    </div>
+  </div>
+  <div class="qb-accent-stripe"></div>
+  <div class="qb-inv-body">
+
+    <div class="qb-parties-row">
+      <div>
+        <div class="qb-party-tag">Billed To</div>
+        <div class="qb-party-name" contenteditable="false" data-ph="Client Name">Client Name</div>
+        <div class="qb-party-detail">
+          <span>Event: <span contenteditable="false" data-ph="Event Type">Debut Celebration</span></span>
+          <span>Contact: <span contenteditable="false" data-ph="+63"></span></span>
+          <span>Email: <span contenteditable="false" data-ph="email"></span></span>
+        </div>
+      </div>
+      <div class="qb-party-divider"></div>
+      <div style="padding-left:32px">
+        <div class="qb-party-tag">Issued By</div>
+        <div class="qb-party-name" contenteditable="false" data-ph="Business Name">The Scent Gallery</div>
+        <div class="qb-party-detail">
+          <span><span contenteditable="false" data-ph="Address">Mendez, Cavite</span></span>
+          <span>Philippines</span>
+          <span>Contact: <span contenteditable="false" data-ph="+63">9395167776</span></span>
+          <span>Email: <span contenteditable="false" data-ph="email">cruzkeith71@gmail.com</span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="qb-date-row">
+      <div class="qb-date-chip"><div class="qb-date-chip-label">Invoice Date</div><input type="date" class="qb-date-input" id="qb-inv-date-issue" value="2026-06-19"/></div>
+      <div class="qb-date-chip"><div class="qb-date-chip-label">Event Date</div><input type="date" class="qb-date-input" id="qb-inv-date-event"/></div>
+      <div class="qb-date-chip"><div class="qb-date-chip-label">Due Date</div><input type="date" class="qb-date-input" id="qb-inv-date-due"/></div>
+      <div class="qb-date-chip"><div class="qb-date-chip-label">Quotation Ref.</div><div class="qb-date-chip-value" contenteditable="false" data-ph="QT-2026-001">QT-2026-001</div></div>
+	   <div class="qb-date-chip"><div class="qb-date-chip-label">Contract Ref.</div><div class="qb-date-chip-value" contenteditable="false" data-ph="QT-2026-001">CT-2026-001</div></div>
+    </div>
+
+    <div style="margin-bottom:36px">
+      <div class="qb-section-label">Event Details</div>
+      <div class="qb-event-grid">
+        <div class="qb-event-cell"><div class="qb-event-cell-label">Event Type</div><div class="qb-event-cell-value" contenteditable="false" data-ph="e.g. Debut">Debut Celebration</div></div>
+        <div class="qb-event-cell"><div class="qb-event-cell-label">Venue</div><div class="qb-event-cell-value" contenteditable="false" data-ph="Venue"></div></div>
+        <div class="qb-event-cell"><div class="qb-event-cell-label">Guest Count</div><div class="qb-event-cell-value" contenteditable="false" data-ph="e.g. 100 pax">100 pax</div></div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:32px">
+      <div class="qb-section-label">Order Summary</div>
+      <table class="qb-items" id="qb-inv-items-table">
+        <thead><tr>
+          <th style="width:36%">Item</th><th>Size</th><th>Type</th>
+          <th class="qb-r">Unit Price</th><th class="qb-r">Qty</th><th class="qb-r">Amount</th>
+          <th class="qb-r qb-no-print" style="width:28px"></th>
+        </tr></thead>
+        <tbody id="qb-inv-body">
+        </tbody>
+      </table>
+      <button class="qb-add-row-btn qb-no-print" onclick="qbAddRow('inv')">&#43; Add line item</button>
+      <select class="qb-no-print" id="qb-inv-item-picker" onchange="qbAddInvoiceItemFromPicker(this)" style="margin-left:10px;font-size:11px;padding:9px 10px;border:1px solid var(--line);border-radius:3px;background:var(--white);color:var(--dark);cursor:pointer;font-family:var(--sans)">
+        <option value="">&#43; Choose item from Catalogue / Packages...</option>
+        <optgroup label="Packages" id="qb-inv-picker-packages"></optgroup>
+        <optgroup label="Fragrance Catalogue" id="qb-inv-picker-catalogue"></optgroup>
+      </select>
+    </div>
+
+    <div class="qb-totals-block">
+      <div class="qb-totals-inner">
+        <div class="qb-totals-row" style="font-weight:500;color:var(--dark)"><span>Subtotal</span><span id="qb-inv-subtotal">&#8369;0.00</span></div>
+        <div class="qb-inc-row" id="qb-inv-inc1"><span class="i-label">Personalization &amp; Label</span><span>Included</span><button class="qb-inc-toggle qb-no-print" onclick="qbToggleInc(this)">Hide</button></div>
+        <div class="qb-inc-row" id="qb-inv-inc2"><span class="i-label">Customized Packaging</span><span>Included</span><button class="qb-inc-toggle qb-no-print" onclick="qbToggleInc(this)">Hide</button></div>
+        <div class="qb-inc-row" id="qb-inv-inc3"><span class="i-label">Digital Event Website</span><span>Included</span><button class="qb-inc-toggle qb-no-print" onclick="qbToggleInc(this)">Hide</button></div>
+        <div class="qb-inc-row" id="qb-inv-inc4"><span class="i-label">Delivery / Logistics</span><span>Included</span><button class="qb-inc-toggle qb-no-print" onclick="qbToggleInc(this)">Hide</button></div>
+        <div class="qb-totals-row qb-grand"><span class="qb-t-label">Total Due</span><span class="qb-t-value" id="qb-inv-total">&#8369;0.00</span></div>
+        <div class="qb-deposit-box">
+          <span class="qb-deposit-label">Downpayment
+            <select class="qb-no-print" onchange="qbRecalcInv()" id="qb-inv-dpct" style="margin-left:6px;border:none;background:transparent;color:var(--accent);font-size:11px;cursor:pointer">
+              <option value="50">50%</option><option value="30">30%</option><option value="100">Full</option>
+            </select>
+          </span>
+          <span class="qb-deposit-value" id="qb-inv-deposit">&#8369;0.00</span>
+        </div>
+      </div>
+    </div>
+
+   <!-- <div class="qb-inclusions-section">
+      <div class="qb-section-label">Every Piece Includes</div>
+      <div class="qb-inc-grid">
+        <div class="qb-inc-item"><div class="qb-inc-num">01</div><div><div class="qb-inc-title" contenteditable="false" data-ph="Title">Premium Fragrance Oil</div><div class="qb-inc-desc" contenteditable="false" data-ph="Desc">EDT or EDP blend, mixed to specification</div></div></div>
+        <div class="qb-inc-item"><div class="qb-inc-num">02</div><div><div class="qb-inc-title" contenteditable="false" data-ph="Title">Glass Spray Bottle</div><div class="qb-inc-desc" contenteditable="false" data-ph="Desc">5ml or 10ml glass atomizer, selected per package</div></div></div>
+        <div class="qb-inc-item"><div class="qb-inc-num">03</div><div><div class="qb-inc-title" contenteditable="false" data-ph="Title">Personalized Label</div><div class="qb-inc-desc" contenteditable="false" data-ph="Desc">Custom-printed with guest of honor's name and event date</div></div></div>
+        <div class="qb-inc-item"><div class="qb-inc-num">04</div><div><div class="qb-inc-title" contenteditable="false" data-ph="Title">Customized Packaging</div><div class="qb-inc-desc" contenteditable="false" data-ph="Desc">Branded gift box with ribbon, coordinated to event motif</div></div></div>
+        <div class="qb-inc-item qb-full"><div class="qb-inc-num">05</div><div><div class="qb-inc-title" contenteditable="false" data-ph="Title">Digital Event Website</div><div class="qb-inc-desc" contenteditable="false" data-ph="Desc">A personalized event website accessible via QR code on the label. Suitable for debut, wedding, or any celebration.</div></div></div>
+      </div>
+    </div>
+
+    <div class="qb-terms-section">
+      <div class="qb-section-label">Terms and Conditions</div>
+      <div class="qb-terms-grid">
+        <div class="qb-term-item"><strong>Payment</strong><span contenteditable="false" data-ph="Terms">50% downpayment to confirm order. Balance due upon delivery or pick-up.</span></div>
+        <div class="qb-term-item"><strong>Lead Time</strong><span contenteditable="false" data-ph="Terms">10 to 14 business days from confirmed order and approved design.</span></div>
+        <div class="qb-term-item"><strong>Cancellation</strong><span contenteditable="false" data-ph="Terms">Downpayments are non-refundable once production has commenced.</span></div>
+        <div class="qb-term-item"><strong>Design Approval</strong><span contenteditable="false" data-ph="Terms">Client reviews and approves label design before printing. No changes after approval.</span></div>
+        <div class="qb-term-item"><strong>Revisions</strong><span contenteditable="false" data-ph="Terms">Up to 2 label revisions included. Additional revisions subject to a fee.</span></div>
+        <div class="qb-term-item"><strong>Delivery</strong><span contenteditable="false" data-ph="Terms">Logistics are included. A responsible party must be available to receive the order.</span></div>
+      </div>
+    </div> -->
+
+     <!-- SIGNATURE -->
+    <div class="qb-sig-section">
+      <div><div class="qb-sig-line"></div><div class="qb-sig-label">Client Signature over Printed Name</div></div>
+      <div><div class="qb-sig-line"></div><div class="qb-sig-label">Authorized Representative</div></div>
+    </div>
+    <!-- <div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-bottom:44px">
+      <div><div class="qb-sig-line" style="margin-top:0"></div><div class="qb-sig-label">Date Signed</div></div>
+      <div><div class="qb-sig-line" style="margin-top:0"></div><div class="qb-sig-label">Date Signed</div></div>
+    </div> -->
+  </div>
+  <div class="qb-inv-footer">
+    <div class="qb-footer-note" contenteditable="false" data-ph="Footer">"Thank you for letting us be part of your celebration."</div>
+    <!-- <div class="qb-footer-tagline" contenteditable="false" data-ph="Tagline">Personalized &nbsp;&middot;&nbsp; Elegant &nbsp;&middot;&nbsp; Memorable</div> -->
+  </div>
+</div>
+</div> 
+
+<!-- ══ QUOTATION TAB ══ -->
+<div class="qb-tab-panel qb-hidden-tab" id="qb-panel-quot">
+<div class="qb-quotation-card" id="qb-quotation">
+
+
+  <div class="qb-inv-header">
+    <div>
+      <img src="logo.png" alt="the scent gallery" style="height:auto;width:auto;filter:invert(1);display:block;margin-bottom:6px"/>
+	</div>
+    <div class="qb-inv-meta">
+      <div class="qb-inv-label">Quotation</div>
+      <div class="qb-inv-number" contenteditable="false" data-ph="QT-2026-001">No. QT-2026-001</div>
+      <div class="qb-inv-status" contenteditable="false" data-ph="Status">Pending Approval</div>
+    </div>
+  </div>
+  <div class="qb-accent-stripe"></div>
+  <div class="qb-inv-body">
+    <div style="margin-bottom:36px">
+      <div class="qb-section-label">Client Information</div>
+      <table class="qb-info-table">
+        <tr><td>Event Type</td><td contenteditable="false" data-ph="Debut / Wedding / Other">Debut Celebration</td></tr>
+        <tr><td>Client Name</td><td contenteditable="false" data-ph="Full name" data-empty="true"></td></tr>
+        <tr><td>Event Date</td><td contenteditable="false" data-ph="MM/DD/YYYY" data-empty="true"></td></tr>
+        <tr><td>Event Venue</td><td contenteditable="false" data-ph="Venue" data-empty="true"></td></tr>
+        <tr><td>Contact Number</td><td contenteditable="false" data-ph="+63" data-empty="true"></td></tr>
+        <tr><td>Email Address</td><td contenteditable="false" data-ph="email@example.com" data-empty="true"></td></tr>
+        <tr><td>Number of Guests</td><td contenteditable="false" data-ph="e.g. 100 pax">100 pax</td></tr>
+        <tr><td>Quotation Date</td><td contenteditable="false" data-ph="Date">June 19, 2026</td></tr>
+        <tr><td>Quotation No.</td><td contenteditable="false" data-ph="QT-2026-001">QT-2026-001</td></tr>
+      </table>
+    </div>
+
+    <!-- Package options (screen only) -->
+    <div style="margin-bottom:32px" class="qb-quot-all-packages">
+      <div class="qb-section-label">Package Options</div>
+      <p style="font-size:13px;color:var(--gray);margin-bottom:16px">All available packages are listed below for the client to choose from. Price and quantity per row can be adjusted for this quotation without affecting the saved package list.</p>
+      <table class="qb-pkg-table" id="qb-quot-pkg-table">
+        <thead><tr>
+          <th style="width:34%">Package</th><th>Size</th><th>Type</th>
+          <th class="qb-r">Price / Piece</th><th class="qb-r">Qty</th><th class="qb-r">Total</th>
+          <th class="qb-r qb-no-print" style="width:28px"></th>
+        </tr></thead>
+        <tbody id="qb-quot-body">
+        </tbody>
+      </table>
+      <button class="qb-add-row-btn qb-no-print" onclick="qbAddRow('quot')">&#43; Add package option</button>
+    </div>
+
+    <div class="qb-inclusions-section">
+      <div class="qb-section-label">What&#39;s Included Per Piece</div>
+      <div class="qb-inc-grid">
+        <div class="qb-inc-item"><div class="qb-inc-num">01</div><div><div class="qb-inc-title" contenteditable="false">Premium Fragrance Oil</div><div class="qb-inc-desc" contenteditable="false">EDT or EDP blend, mixed to specification</div></div></div>
+        <div class="qb-inc-item"><div class="qb-inc-num">02</div><div><div class="qb-inc-title" contenteditable="false">Glass Spray Bottle</div><div class="qb-inc-desc" contenteditable="false">5ml or 10ml glass atomizer, selected per package</div></div></div>
+        <div class="qb-inc-item"><div class="qb-inc-num">03</div><div><div class="qb-inc-title" contenteditable="false">Personalized Label</div><div class="qb-inc-desc" contenteditable="false">Custom-printed bottle sticker with guest of honor&#39;s name and event date</div></div></div>
+        <div class="qb-inc-item"><div class="qb-inc-num">04</div><div><div class="qb-inc-title" contenteditable="false">Customized Packaging</div><div class="qb-inc-desc" contenteditable="false">Small paper board that serves as the bottle holder and it can be customized and coordinated to event motif</div></div></div>
+        <div class="qb-inc-item qb-full" id="qb-website-inc-quot"><div class="qb-inc-num">05</div><div><div class="qb-inc-title" contenteditable="false">Digital Invitation Website</div><div class="qb-inc-desc" contenteditable="false">Personalized event website that serves as digital invitation. Suitable for debut, wedding, or any celebration.</div></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="qb-inv-footer">
+    <div class="qb-footer-note" contenteditable="false">"Thank you for letting us be part of your celebration."</div>
+  </div>
+</div>
+<div class="qb-confirm-bar qb-no-print">
+  <label class="qb-confirm-check"><input type="checkbox" id="qb-cc-quot" onchange="document.getElementById('qb-dl-quot').disabled=!this.checked"> Client has reviewed this quotation</label>
+  <div class="qb-confirm-bar-text"><strong>Ready to send?</strong> Confirm then download as PDF.</div>
+  <button class="qb-tb-btn qb-green" id="qb-dl-quot" disabled onclick="qbOpenModal('quot')">&#10003; Download Quotation</button>
+</div>
+</div>
+
+<!-- ══ CONTRACT TAB ══ -->
+<div class="qb-tab-panel qb-hidden-tab" id="qb-panel-cont">
+<div class="qb-quotation-card" id="qb-contract-card">
+
+
+  <div class="qb-inv-header">
+    <div>
+      <img src="logo.png" alt="the scent gallery" style="height:auto;width:auto;filter:invert(1);display:block;margin-bottom:6px"/>
+	</div>
+    <div class="qb-inv-meta">
+      <div class="qb-inv-label">Contract</div>
+      <div class="qb-inv-number" contenteditable="false" data-ph="CT-2026-001">No. CT-2026-001</div>
+      <div class="qb-inv-status" contenteditable="false" data-ph="Status">For Signing</div>
+    </div>
+  </div>
+
+  <div class="qb-accent-stripe"></div>
+  <div class="qb-inv-body">
+    <div style="margin-bottom:36px">
+      <div class="qb-section-label">Client Information</div>
+      <table class="qb-info-table">
+        <tr><td>Event Type</td><td contenteditable="false" data-ph="Debut / Wedding / Other">Debut Celebration</td></tr>
+        <tr><td>Client Name</td><td contenteditable="false" data-ph="Full name" data-empty="true"></td></tr>
+        <tr><td>Event Date</td><td contenteditable="false" data-ph="MM/DD/YYYY" data-empty="true"></td></tr>
+        <tr><td>Event Venue</td><td contenteditable="false" data-ph="Venue" data-empty="true"></td></tr>
+        <tr><td>Contact Number</td><td contenteditable="false" data-ph="+63" data-empty="true"></td></tr>
+        <tr><td>Email Address</td><td contenteditable="false" data-ph="email@example.com" data-empty="true"></td></tr>
+        <tr><td>Number of Guests</td><td contenteditable="false" data-ph="e.g. 100 pax">100 pax</td></tr>
+        <tr><td>Quotation Date</td><td contenteditable="false" data-ph="Date">June 19, 2026</td></tr>
+        <tr><td>Quotation No.</td><td contenteditable="false" data-ph="QT-2026-001">QT-2026-001</td></tr>
+      </table>
+    </div>
+
+    <div style="margin-bottom:32px">
+      <div class="qb-section-label">Package Options</div>
+      <p style="font-size:13px;color:var(--gray);margin-bottom:16px">All available packages are listed below. Price and quantity per row can be adjusted for this contract without affecting the saved package list.</p>
+      <table class="qb-pkg-table" id="qb-cont-pkg-table">
+        <thead><tr>
+          <th style="width:34%">Package</th><th>Size</th><th>Type</th>
+          <th class="qb-r">Price / Piece</th><th class="qb-r">Qty</th><th class="qb-r">Total</th>
+          <th class="qb-r qb-no-print" style="width:28px"></th>
+        </tr></thead>
+        <tbody id="qb-cont-body">
+        </tbody>
+      </table>
+      <button class="qb-add-row-btn qb-no-print" onclick="qbAddRow('cont')">&#43; Add package option</button>
+    </div>
+
+    <div class="qb-inclusions-section">
+      <div class="qb-section-label">What&#39;s Included Per Piece</div>
+      <div class="qb-inc-grid">
+        <div class="qb-inc-item"><div class="qb-inc-num">01</div><div><div class="qb-inc-title" contenteditable="false">Premium Fragrance Oil</div><div class="qb-inc-desc" contenteditable="false">EDT or EDP blend, mixed to specification</div></div></div>
+        <div class="qb-inc-item"><div class="qb-inc-num">02</div><div><div class="qb-inc-title" contenteditable="false">Glass Spray Bottle</div><div class="qb-inc-desc" contenteditable="false">5ml or 10ml glass atomizer, selected per package</div></div></div>
+        <div class="qb-inc-item"><div class="qb-inc-num">03</div><div><div class="qb-inc-title" contenteditable="false">Personalized Label</div><div class="qb-inc-desc" contenteditable="false">Custom-printed bottle sticker with guest of honor&#39;s name and event date</div></div></div>
+        <div class="qb-inc-item"><div class="qb-inc-num">04</div><div><div class="qb-inc-title" contenteditable="false">Customized Packaging</div><div class="qb-inc-desc" contenteditable="false">Small paper board that serves as the bottle holder and it can be customized and coordinated to event motif</div></div></div>
+        <div class="qb-inc-item qb-full" id="qb-website-inc-cont"><div class="qb-inc-num">05</div><div><div class="qb-inc-title" contenteditable="false">Digital Invitation Website</div><div class="qb-inc-desc" contenteditable="false">Personalized event website that serves as digital invitation. Suitable for debut, wedding, or any celebration.</div></div></div>
+      </div>
+    </div>
+
+    <div class="qb-terms-section">
+      <div class="qb-section-label">Terms and Conditions</div>
+      <div class="qb-terms-grid">
+        <div class="qb-term-item"><strong>Payment</strong><span contenteditable="false">50% downpayment to confirm order. Balance due upon delivery or pick-up.</span></div>
+        <div class="qb-term-item"><strong>Lead Time</strong><span contenteditable="false">10 to 14 business days from confirmed order and approved design.</span></div>
+        <div class="qb-term-item"><strong>Cancellation</strong><span contenteditable="false">Downpayments are non-refundable once production has commenced.</span></div>
+        <div class="qb-term-item"><strong>Design Approval</strong><span contenteditable="false">Client reviews and approves label design before printing. No changes after approval.</span></div>
+        <div class="qb-term-item"><strong>Revisions</strong><span contenteditable="false">Up to 2 label revisions included. Additional revisions subject to a fee.</span></div>
+        <div class="qb-term-item"><strong>Delivery</strong><span contenteditable="false">Logistics are included. A responsible party must be available to receive the order.</span></div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:32px">
+      <div class="qb-section-label">Order Confirmation and Agreement</div>
+      <div class="qb-contract-section">
+        <div class="qb-contract-title">Agreement to Proceed</div>
+        <div class="qb-contract-body" contenteditable="false">By signing below, the client confirms that they have read, understood, and agreed to all terms stated in this document. This contract serves as a binding agreement upon receipt of the required downpayment.</div>
+        <div class="qb-contract-fields">
+          <div><div class="qb-cf-label">Selected Package</div><div class="qb-cf-value" id="qb-cf-package" contenteditable="false" data-ph="Package name">_______________</div></div>
+          <div><div class="qb-cf-label">Fragrance Type</div><div class="qb-cf-value" id="qb-cf-type" contenteditable="false" data-ph="EDT / EDP">_______________</div></div>
+		  <div><div class="qb-cf-label">Scents</div><div class="qb-cf-value" contenteditable="false">_______________</div></div>
+          <div><div class="qb-cf-label">Total Amount Due</div><div class="qb-cf-value" id="qb-cf-total" contenteditable="false">&#8369; _______________</div></div>
+          <div><div class="qb-cf-label">50% Downpayment</div><div class="qb-cf-value" id="qb-cf-deposit" contenteditable="false">&#8369; _______________</div></div>
+          <div><div class="qb-cf-label">Balance Upon Delivery</div><div class="qb-cf-value" id="qb-cf-balance" contenteditable="false">&#8369; _______________</div></div>
+          <div><div class="qb-cf-label">Expected Completion Date</div><div class="qb-cf-value" contenteditable="false">_______________</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="qb-sig-section">
+      <div><div class="qb-sig-line"></div><div class="qb-sig-label">Client Signature over Printed Name</div></div>
+      <div><div class="qb-sig-line"></div><div class="qb-sig-label">Authorized Representative</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-bottom:44px">
+      <div><div class="qb-sig-line" style="margin-top:0"></div><div class="qb-sig-label">Date Signed</div></div>
+      <div><div class="qb-sig-line" style="margin-top:0"></div><div class="qb-sig-label">Date Signed</div></div>
+    </div>
+  </div>
+  <div class="qb-inv-footer">
+    <div class="qb-footer-note" contenteditable="false">"Thank you for letting us be part of your celebration."</div>
+  </div>
+</div>
+<div class="qb-confirm-bar qb-no-print">
+  <label class="qb-confirm-check"><input type="checkbox" id="qb-cc-cont" onchange="document.getElementById('qb-dl-cont').disabled=!this.checked"> Client has signed and agreed</label>
+  <div class="qb-confirm-bar-text"><strong>Ready to download?</strong> Save this contract as PDF.</div>
+  <button class="qb-tb-btn qb-green" id="qb-dl-cont" disabled onclick="qbOpenModal('cont')">&#10003; Download Contract</button>
+</div>
+</div>
+
+<!-- ══ MANAGE PACKAGES TAB (maintenance — no pax/qty here; feeds Invoice + Quotation) ══ -->
+<div class="qb-tab-panel qb-hidden-tab qb-no-print" id="qb-panel-pkgs">
+<div class="qb-quotation-card" id="qb-packages-card" style="padding:40px 44px">
+  <div style="margin-bottom:20px">
+    <div class="qb-section-label">Package Maintenance</div>
+    <p style="font-size:13px;color:var(--gray);line-height:1.6;max-width:640px">
+      Customize the packages offered here. Saving updates the Invoice and Quotation tabs
+      automatically, so package names, sizes, types and prices never need to be retyped.
+      Guest count (pax) is entered per order in the Invoice/Quotation tabs, not here.
+    </p>
+  </div>
+  <table class="qb-pkg-table" id="qb-packages-table">
+    <thead><tr>
+      <th style="width:22%">Package Name</th>
+      <th style="width:22%">Description</th>
+      <th style="width:10%">Size</th>
+      <th style="width:16%">Type</th>
+      <th class="qb-r" style="width:12%">Unit Price</th>
+      <th style="width:10%;text-align:center">Website Incl.</th>
+      <th style="width:28px"></th>
+    </tr></thead>
+    <tbody id="qb-packages-body"></tbody>
+  </table>
+  <button class="qb-add-row-btn" style="display:flex" onclick="qbAddPackage()">&#43; Add package</button>
+  <div style="display:flex;justify-content:flex-end;margin-top:18px">
+    <button class="qb-tb-btn qb-green" style="padding:11px 26px" onclick="qbSavePackages()">&#10003; Save Packages</button>
+  </div>
+</div>
+</div>
+
+<div class="qb-modal-overlay" id="qb-confirm-modal">
+  <div class="qb-modal-box">
+    <div class="qb-modal-icon">&#10003;</div>
+    <div class="qb-modal-title">Ready to Download</div>
+    <div class="qb-modal-body">Choose <strong>Save as PDF</strong> in your browser print dialog.</div>
+    <div class="qb-modal-actions">
+      <button class="qb-modal-btn qb-secondary" onclick="qbCloseModal()">Cancel</button>
+      <button class="qb-modal-btn qb-primary" onclick="qbCloseModal();qbPrintTab(qbCurrentPrintTab)">Download PDF</button>
+    </div>
+  </div>
+</div>
+
+
+</div>
 </div>
 
 <!-- MODALS -->
@@ -913,6 +1521,12 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ── STATE ────────────────────────────────────────────────────────────────────
 let inv=[], orders=[], purchases=[], batches=[], catalogue=[], costing=[], bottleStock=[], profitEntries=[], stockLog=[];
+let packages=[
+  {id:'pkg1', name:'Package 1 — Essence Package', desc:'Personalized label and Customized Packaging', size:'5ml', type:'EDT (8% to 15% oil)', price:64.42, hasWebsite:false},
+  {id:'pkg2', name:'Package 2 — Signature Package', desc:'Personalized label, Customized Packaging and Digital Invitation Website', size:'5ml', type:'EDP (15% to 25% oil)', price:68.20, hasWebsite:true},
+  {id:'pkg3', name:'Package 3 — Prestige Package', desc:'Personalized label and Customized Packaging', size:'10ml', type:'EDT (8% to 15% oil)', price:75.84, hasWebsite:false},
+  {id:'pkg4', name:'Package 4 — Elite Package', desc:'Personalized label, Customized Packaging and Digital Invitation Website', size:'10ml', type:'EDP (15% to 25% oil)', price:83.40, hasWebsite:true},
+];
 let activeTab='dash', editId=null;
 let currentUsername='';
 let sortState={inv:{k:'batch',d:1},orders:{k:'num',d:1},purchases:{k:'batch',d:1},catalogue:{k:'grade',d:1},costing:{k:'name',d:1},bottles:{k:'size',d:1},profit:{k:'date',d:-1},stocklog:{k:'ts',d:-1}};
@@ -1122,16 +1736,17 @@ const SB_TABLES = {
   costing:    { table:'costing',      map:c=>({id:c.id, name:c.name, oil_cost:+c.oilCost||0, fixative:+c.fixative||0, alcohol:+c.alcohol||0, moisturizer:+c.moisturizer||0, box:+c.box||30, label:+c.label||10, markup:+c.markup||100, notes:c.notes||''}) },
   profitEntries:{ table:'profit_entries', map:p=>({id:p.id, date:p.date||null, description:p.description||'', amount:+p.amount||0, notes:p.notes||''}) },
   stockLog:   { table:'stock_log',    map:s=>({id:s.id, ts:s.ts, type:s.type, item_type:s.itemType, item_name:s.itemName, batch:s.batch||'', qty:+s.qty||0, resulting_stock:s.resultingStock, reason:s.reason||'', username:s.username||''}) },
+  packages:   { table:'packages',     map:(p,i)=>({id:p.id, name:p.name, description:p.desc||'', size:p.size||'', type:p.type||'', price:+p.price||0, has_website:!!p.hasWebsite, sort_order:i}) },
 };
 // Tables that may not exist yet in an older Supabase project — failures here
 // are logged but never block saving/loading the core tables above.
-const SB_OPTIONAL_TABLES = ['profit_entries','stock_log'];
+const SB_OPTIONAL_TABLES = ['profit_entries','stock_log','packages'];
 
 async function doSave(){
   showSaveStatus('saving','Syncing to Supabase...');
   const failedOptional=[];
   try{
-    const arrays = {inv,bottleStock,orders,purchases,catalogue,costing,profitEntries,stockLog};
+    const arrays = {inv,bottleStock,orders,purchases,catalogue,costing,profitEntries,stockLog,packages};
     for(const key of Object.keys(SB_TABLES)){
       const {table,map} = SB_TABLES[key];
       const rows = arrays[key].map(map);
@@ -1367,6 +1982,13 @@ async function load(){
     if(logR.error) throw logR.error;
     stockLog = (logR.data||[]).map(r=>({id:r.id,ts:r.ts,type:r.type,itemType:r.item_type,itemName:r.item_name,batch:r.batch,qty:r.qty,resultingStock:r.resulting_stock,reason:r.reason,username:r.username}));
   }catch(e){ console.warn('stock_log table not available yet:',e.message); stockLog=stockLog||[]; }
+  try{
+    const pkgR = await sb.from('packages').select('*').order('sort_order',{ascending:true});
+    if(pkgR.error) throw pkgR.error;
+    if(pkgR.data && pkgR.data.length){
+      packages = pkgR.data.map(r=>({id:r.id,name:r.name,desc:r.description||'',size:r.size||'',type:r.type||'',price:+r.price||0,hasWebsite:!!r.has_website}));
+    }
+  }catch(e){ console.warn('packages table not available yet:',e.message); }
 
   // First-ever run (empty database): seed it once so the app isn't blank.
   if(!inv.length && !orders.length && !purchases.length && !catalogue.length && !costing.length && !bottleStock.length){
@@ -1379,6 +2001,10 @@ async function load(){
     bottleStock=JSON.parse(JSON.stringify(SEED_BOTTLE_STOCK));
     await doSave();
   }
+  // Quotation Builder: rebuild Invoice/Quotation package rows and the
+  // Manage Packages table from whatever `packages` data load() resolved to.
+  if(typeof qbBuildDocRows==='function') qbBuildDocRows();
+  if(typeof qbRenderPackagesTable==='function') qbRenderPackagesTable();
 }
 
 // ── UTILS ────────────────────────────────────────────────────────────────────
@@ -1390,19 +2016,20 @@ const rem = (oil,bot) => Math.max(0,(parseFloat(oil)||0)*4-(parseFloat(bot)||0))
 // ── TAB SWITCH ───────────────────────────────────────────────────────────────
 function switchTab(t){
   activeTab=t;
-  ['dash','inv','orders','purchases','bottles','catalogue','costing','profit','stocklog'].forEach(x=>{
+  ['dash','inv','orders','purchases','bottles','catalogue','costing','profit','stocklog','docs'].forEach(x=>{
     const p=document.getElementById('panel-'+x);
     const tb=document.getElementById('tab-'+x);
     if(p) p.classList.toggle('active',x===t);
     if(tb) tb.classList.toggle('active',x===t);
   });
-  const addLabels={dash:null,inv:'Add Fragrance',orders:'Add Order',purchases:'Add Purchase',bottles:'Add Bottle Type',catalogue:'Add Fragrance',costing:'Add Costing',profit:'Add Profit Entry',stocklog:null};
+  const addLabels={dash:null,inv:'Add Fragrance',orders:'Add Order',purchases:'Add Purchase',bottles:'Add Bottle Type',catalogue:'Add Fragrance',costing:'Add Costing',profit:'Add Profit Entry',stocklog:null,docs:null};
   const addBtn=document.getElementById('tb-add');
   if(addLabels[t]){addBtn.style.display='';addBtn.textContent='+ '+addLabels[t];}
   else addBtn.style.display='none';
   const isOrders=t==='orders';
   const isPurchases=t==='purchases';
   const isLog=t==='stocklog';
+  const isDocs=t==='docs';
   if(!isOrders) selectedOrders.clear();
   document.getElementById('tb-status-filter').style.display=isOrders?'':'none';
   document.getElementById('tb-paid-filter').style.display=isOrders?'':'none';
@@ -1410,9 +2037,10 @@ function switchTab(t){
   document.getElementById('tb-payment-filter').style.display=isOrders?'':'none';
   document.getElementById('tb-pur-payment-filter').style.display=isPurchases?'':'none';
   document.getElementById('tb-logtype-filter').style.display=isLog?'':'none';
-  document.getElementById('tb-batch-filter').style.display=isLog?'none':'';
-  document.getElementById('tb-batch').style.display=(isLog||t==='profit')?'none':'';
-  document.getElementById('tb-export-csv').style.display=t!=='dash'?'':'none';
+  document.getElementById('tb-batch-filter').style.display=(isLog||isDocs)?'none':'';
+  document.getElementById('tb-batch').style.display=(isLog||t==='profit'||isDocs)?'none':'';
+  document.getElementById('tb-export-csv').style.display=(t!=='dash'&&!isDocs)?'':'none';
+  document.getElementById('tb-search').style.display=isDocs?'none':'';
   if(!isOrders){
     document.getElementById('tb-paid-filter').value='';
     document.getElementById('tb-delivery-filter').value='';
@@ -1501,20 +2129,32 @@ function updateHint(){
 
 // ── DASHBOARD ────────────────────────────────────────────────────────────────
 function renderDash(){
-  const totalSales=orders.filter(o=>o.paid==='Yes').reduce((a,o)=>a+(+o.price||0),0);
-  const totalPur=purchases.reduce((a,p)=>a+(+p.total||0),0);
+  const batch=document.getElementById('tb-batch-filter').value;
+  const banner=document.getElementById('dash-filter-banner');
+  if(batch){
+    banner.style.display='';
+    banner.innerHTML=`<strong style="color:var(--dark)">Filtered to batch: ${esc(batch)}.</strong> Sales, purchases, and orders below reflect this batch only. Bottle Stock, Low Stock Alert, and Sales by Batch always show the whole picture across all batches.`;
+  } else {
+    banner.style.display='none';
+  }
+  const fOrders = batch ? orders.filter(o=>o.batch===batch) : orders;
+  const fPurchases = batch ? purchases.filter(p=>p.batch===batch) : purchases;
+  // Bottle stock, Low Stock Alert, and Sales by Batch are intentionally NOT
+  // filtered by batch — shown as a whole regardless of the batch filter.
+
+  const totalSales=fOrders.filter(o=>o.paid==='Yes').reduce((a,o)=>a+(+o.price||0),0);
+  const totalPur=fPurchases.reduce((a,p)=>a+(+p.total||0),0);
   const profit=totalSales-totalPur;
-  const pending=orders.filter(o=>o.paid==='No'&&o.status!=='Cancelled').reduce((a,o)=>a+(+o.price||0),0);
-  const totalRem=inv.reduce((a,i)=>a+rem(i.oil,i.bottles),0);
-  const lowStock=inv.filter(i=>rem(i.oil,i.bottles)>0&&rem(i.oil,i.bottles)<=3).length;
+  const pending=fOrders.filter(o=>o.paid==='No'&&o.status!=='Cancelled').reduce((a,o)=>a+(+o.price||0),0);
 
   const totalBottles = bottleStock.reduce((a,b)=>a+(+b.stock||0),0);
+  const lowStockCount = inv.filter(i=>getStock(i)>0&&getStock(i)<=(i.minStock||2)).length;
   document.getElementById('dash-stats').innerHTML=`
-    <div class="stat-card green"><div class="stat-lbl">Total Sales (Paid)</div><div class="stat-val">${fmt(totalSales)}</div><div class="stat-sub">${orders.filter(o=>o.paid==='Yes').length} paid orders</div></div>
-    <div class="stat-card red"><div class="stat-lbl">Total Purchases</div><div class="stat-val">${fmt(totalPur)}</div><div class="stat-sub">${purchases.length} purchase records</div></div>
+    <div class="stat-card green"><div class="stat-lbl">Total Sales (Paid)</div><div class="stat-val">${fmt(totalSales)}</div><div class="stat-sub">${fOrders.filter(o=>o.paid==='Yes').length} paid orders</div></div>
+    <div class="stat-card red"><div class="stat-lbl">Total Purchases</div><div class="stat-val">${fmt(totalPur)}</div><div class="stat-sub">${fPurchases.length} purchase records</div></div>
     <div class="stat-card gold" style="border-left-color:var(--gold)"><div class="stat-lbl">Net Profit</div><div class="stat-val" style="color:${profit>=0?'var(--green)':'var(--red)'}">${fmt(profit)}</div><div class="stat-sub">Sales minus purchases</div></div>
     <div class="stat-card orange"><div class="stat-lbl">Pending Collections</div><div class="stat-val">${fmt(pending)}</div><div class="stat-sub">Unpaid orders</div></div>
-    <div class="stat-card blue"><div class="stat-lbl">Bottle Stock</div><div class="stat-val">${totalBottles}</div><div class="stat-sub">${lowStock} fragrance low stock</div></div>`;
+    <div class="stat-card blue"><div class="stat-lbl">Bottle Stock</div><div class="stat-val">${totalBottles}</div><div class="stat-sub">${lowStockCount} fragrance low stock</div></div>`;
 
   document.getElementById('dash-profit').innerHTML=`
     <div class="profit-item"><div class="profit-lbl">Total Revenue</div><div class="profit-val">${fmt(totalSales)}</div></div>
@@ -1523,12 +2163,12 @@ function renderDash(){
 
   // Top scents
   const scCount={};
-  orders.forEach(o=>scCount[o.name]=(scCount[o.name]||0)+1);
+  fOrders.forEach(o=>scCount[o.name]=(scCount[o.name]||0)+1);
   const top=Object.entries(scCount).sort((a,b)=>b[1]-a[1]).slice(0,8);
-  document.getElementById('dash-top-scents').innerHTML=top.map(([n,c])=>
-    `<div class="dash-list-item"><span class="name">${esc(n)}</span><span class="val">${c} order${c>1?'s':''}</span></div>`).join('');
+  document.getElementById('dash-top-scents').innerHTML=top.length?top.map(([n,c])=>
+    `<div class="dash-list-item"><span class="name">${esc(n)}</span><span class="val">${c} order${c>1?'s':''}</span></div>`).join(''):'<div style="color:var(--lgray);font-size:13px;padding:8px 0">No orders for this batch</div>';
 
-  // Low stock
+  // Low stock — always shown across ALL batches, regardless of the batch filter
   const low=inv.filter(i=>getStock(i)<=(i.minStock||2)).sort((a,b)=>getStock(a)-getStock(b)).slice(0,8);
   document.getElementById('dash-low-stock').innerHTML=low.length?low.map(i=>{
     const s=getStock(i);
@@ -1536,17 +2176,17 @@ function renderDash(){
     return `<div class="dash-list-item"><span class="name">${esc(i.name)} <span style="font-size:10px;color:var(--lgray)">${i.batch}</span></span><span class="val ${cls}">${s} left</span></div>`;
   }).join(''):'<div style="color:var(--lgray);font-size:13px;padding:8px 0">All stock healthy ✓</div>';
 
-  // Sales by batch
+  // Sales by batch — always shown across ALL batches, regardless of the batch filter
   const bSales={};
   orders.filter(o=>o.paid==='Yes').forEach(o=>bSales[o.batch]=(bSales[o.batch]||0)+(+o.price||0));
   const bArr=Object.entries(bSales).sort((a,b)=>b[1]-a[1]);
-  document.getElementById('dash-batch-sales').innerHTML=bArr.map(([b,s])=>
-    `<div class="dash-list-item"><span class="name">${esc(b)}</span><span class="val green">${fmt(s)}</span></div>`).join('');
+  document.getElementById('dash-batch-sales').innerHTML=bArr.length?bArr.map(([b,s])=>
+    `<div class="dash-list-item"><span class="name">${esc(b)}</span><span class="val green">${fmt(s)}</span></div>`).join(''):'<div style="color:var(--lgray);font-size:13px;padding:8px 0">No paid orders yet</div>';
 
   // Recent orders
-  const recent=[...orders].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,8);
-  document.getElementById('dash-recent-orders').innerHTML=recent.map(o=>
-    `<div class="dash-list-item"><span class="name">${esc(o.name)} <span style="font-size:10px;color:var(--lgray)">${esc(o.customer)}</span></span><span class="val ${o.paid==='Yes'?'green':'accent'}">${fmt(o.price)}</span></div>`).join('');
+  const recent=[...fOrders].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,8);
+  document.getElementById('dash-recent-orders').innerHTML=recent.length?recent.map(o=>
+    `<div class="dash-list-item"><span class="name">${esc(o.name)} <span style="font-size:10px;color:var(--lgray)">${esc(o.customer)}</span></span><span class="val ${o.paid==='Yes'?'green':'accent'}">${fmt(o.price)}</span></div>`).join(''):'<div style="color:var(--lgray);font-size:13px;padding:8px 0">No orders for this batch</div>';
 }
 
 // ── INVENTORY RENDER ─────────────────────────────────────────────────────────
@@ -3249,6 +3889,312 @@ async function saveChangePwd(){
     setTimeout(()=>document.getElementById('login-user').focus(),150);
   }
 })();
+
+
+// ══════════════════════════════════════════════════════════════════════
+// QUOTATION BUILDER MODULE — Invoice / Quotation / Contract / Manage Packages
+// All identifiers below are qb-prefixed to avoid colliding with the app
+// above. Reuses this script's esc(), uid(), save() from the main app.
+// ══════════════════════════════════════════════════════════════════════
+
+let qbEditingInv=false, qbEditingQuot=false;
+let qbRowId=20, qbActiveTab='inv', qbCurrentPrintTab='quot';
+
+function qbSwitchTab(tab){
+  qbActiveTab=tab;
+  ['inv','quot','cont','pkgs'].forEach(t=>{
+    document.getElementById('qb-panel-'+t).classList.toggle('qb-active-tab',t===tab);
+    document.getElementById('qb-panel-'+t).classList.toggle('qb-hidden-tab',t!==tab);
+    document.getElementById('qb-tab-'+t).classList.toggle('qb-active',t===tab);
+  });
+  const isPkgs=tab==='pkgs';
+  document.getElementById('qb-btn-edit-inv').style.display=isPkgs?'none':'';
+  document.getElementById('qb-btn-add-inv').style.display=isPkgs?'none':'';
+  document.getElementById('qb-btn-print-inv').textContent=isPkgs?'\u{1F5A8} Print Price List':'\u{1F5A8} Print / PDF';
+  if(tab==='inv') qbPopulateItemPicker();
+  if(isPkgs){
+    document.getElementById('qb-hint-inv').textContent='Fields are always editable here — click Save when done.';
+    return;
+  }
+  const editing=tab==='inv'?qbEditingInv:qbEditingQuot;
+  document.getElementById('qb-btn-edit-inv').textContent=editing?'✓ Done Editing':'✎ Edit';
+  document.getElementById('qb-btn-edit-inv').classList.toggle('qb-active',editing);
+  document.getElementById('qb-hint-inv').textContent=editing?'Click any text to edit':'Click Edit to customize';
+}
+
+function qbToggleEdit(){
+  const t=qbActiveTab;
+  if(t==='inv'){
+    qbEditingInv=!qbEditingInv;
+    const card=document.getElementById('qb-invoice');
+    card.classList.toggle('qb-edit-mode',qbEditingInv);
+    card.querySelectorAll('[contenteditable]').forEach(el=>el.contentEditable=qbEditingInv?'true':'false');
+    qbBindInfoTableClean(card);
+    document.getElementById('qb-btn-edit-inv').textContent=qbEditingInv?'✓ Done Editing':'✎ Edit';
+    document.getElementById('qb-btn-edit-inv').classList.toggle('qb-active',qbEditingInv);
+    document.getElementById('qb-hint-inv').textContent=qbEditingInv?'Click any text to edit':'Click Edit to customize';
+    qbRecalcInv();
+  } else {
+    qbEditingQuot=!qbEditingQuot;
+    const cards=[document.getElementById('qb-quotation'),document.getElementById('qb-contract-card')];
+    cards.forEach(c=>{
+      if(c){
+        c.classList.toggle('qb-edit-mode',qbEditingQuot);
+        c.querySelectorAll('[contenteditable]').forEach(el=>el.contentEditable=qbEditingQuot?'true':'false');
+        qbBindInfoTableClean(c);
+      }
+    });
+    document.getElementById('qb-btn-edit-inv').textContent=qbEditingQuot?'✓ Done Editing':'✎ Edit';
+    document.getElementById('qb-btn-edit-inv').classList.toggle('qb-active',qbEditingQuot);
+    document.getElementById('qb-hint-inv').textContent=qbEditingQuot?'Click any text to edit':'Click Edit to customize';
+    qbRecalcQuot();
+    qbRecalcCont();
+  }
+}
+
+function qbBindInfoTableClean(card){
+  // When user clicks into an empty info-table td, clear data-empty so placeholder hides
+  card.querySelectorAll('table.qb-info-table td[data-empty]').forEach(td=>{
+    td.addEventListener('focus',function(){
+      this.removeAttribute('data-empty');
+    },{once:false});
+    td.addEventListener('blur',function(){
+      if(!this.textContent.trim()){
+        this.textContent='';
+        this.setAttribute('data-empty','true');
+      }
+    },{once:false});
+  });
+}
+
+function qbAddRow(tab){
+  const t=tab||qbActiveTab;
+  if(t==='inv'&&!qbEditingInv)qbToggleEdit();
+  if(t!=='inv'&&t!=='cont'&&!qbEditingQuot)qbToggleEdit();
+  if(t==='cont'&&!qbEditingQuot)qbToggleEdit();
+  const tbodyId=t==='inv'?'qb-inv-body':t==='cont'?'qb-cont-body':'qb-quot-body';
+  const tbody=document.getElementById(tbodyId);
+  const tr=document.createElement('tr');
+  if(t==='inv'){
+    tr.innerHTML=`<td><span class="qb-item-name" contenteditable="true">New Item</span><span class="qb-item-sub" contenteditable="true"></span></td><td><span contenteditable="true"></span></td><td><span contenteditable="true"></span></td><td class="qb-r"><span class="unit-price" contenteditable="true" oninput="qbRecalcInv()">0</span></td><td class="qb-r"><span class="qty" contenteditable="true" oninput="qbRecalcInv()">1</span></td><td class="qb-r qb-amount-cell"><span class="amount">&#8369;0.00</span></td><td class="qb-no-print"><button class="qb-del-row" onclick="qbDelRow(this)">&times;</button></td>`;
+  } else {
+    const recalcFn = t==='cont'?'qbRecalcCont()':'qbRecalcQuot()';
+    tr.innerHTML=`<td><span class="qb-item-name" contenteditable="true">New Package</span></td><td><span contenteditable="true"></span></td><td><span contenteditable="true"></span></td><td class="qb-r"><span class="q-price" contenteditable="true" oninput="${recalcFn}">0</span></td><td class="qb-r"><span class="q-qty" contenteditable="true" oninput="${recalcFn}">1</span></td><td class="qb-r qb-q-amt"><span class="q-amount">&#8369;0.00</span></td><td class="qb-no-print"><button class="qb-del-row" onclick="qbDelRow(this)">&times;</button></td>`;
+  }
+  tbody.appendChild(tr);
+  tr.querySelector('[contenteditable]').focus();
+}
+
+function qbPopulateItemPicker(){
+  const pkgGroup = document.getElementById('qb-inv-picker-packages');
+  const catGroup = document.getElementById('qb-inv-picker-catalogue');
+  if(!pkgGroup || !catGroup) return;
+  pkgGroup.innerHTML = (packages||[]).map(p=>`<option value="pkg:${p.id}">${esc(p.name)}${p.size?' — '+esc(p.size):''}${p.type?' '+esc(p.type):''} (${fmt(p.price)})</option>`).join('');
+  catGroup.innerHTML = (typeof catalogue!=='undefined'?catalogue:[]).map(c=>`<option value="cat:${c.id}">${esc(c.name)}${c.grade?' — '+esc(c.grade):''} (${fmt(c.price)})</option>`).join('');
+}
+
+function qbAddInvoiceItemFromPicker(sel){
+  const val = sel.value;
+  if(!val) return;
+  const sep = val.indexOf(':');
+  const source = val.slice(0,sep), id = val.slice(sep+1);
+  let name='', desc='', size='', type='', price=0;
+  if(source==='pkg'){
+    const p=(packages||[]).find(x=>x.id===id);
+    if(!p){ sel.value=''; return; }
+    name=p.name; desc=p.desc||''; size=p.size||''; type=p.type||''; price=+p.price||0;
+  } else if(source==='cat'){
+    const c=(typeof catalogue!=='undefined'?catalogue:[]).find(x=>x.id===id);
+    if(!c){ sel.value=''; return; }
+    name=c.name; desc=c.inspired?('Inspired by '+c.inspired):''; size=''; type=c.grade||''; price=+c.price||0;
+  }
+  if(!qbEditingInv) qbToggleEdit();
+  const tbody=document.getElementById('qb-inv-body');
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td><span class="qb-item-name" contenteditable="true">${esc(name)}</span><span class="qb-item-sub" contenteditable="true">${esc(desc)}</span></td><td><span contenteditable="true">${esc(size)}</span></td><td><span contenteditable="true">${esc(type)}</span></td><td class="qb-r"><span class="unit-price" contenteditable="true" oninput="qbRecalcInv()">${price.toFixed(2)}</span></td><td class="qb-r"><span class="qty" contenteditable="true" oninput="qbRecalcInv()">1</span></td><td class="qb-r qb-amount-cell"><span class="amount">${qbFmt(price)}</span></td><td class="qb-no-print"><button class="qb-del-row" onclick="qbDelRow(this)">&times;</button></td>`;
+  tbody.appendChild(tr);
+  qbRecalcInv();
+  sel.value='';
+}
+
+function qbDelRow(btn){btn.closest('tr').remove();qbRecalcInv();qbRecalcQuot();qbRecalcCont();}
+
+function qbFmt(n){return '&#8369;'+n.toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});}
+
+function qbRecalcInv(){
+  let sub=0;
+  document.querySelectorAll('#qb-inv-body tr').forEach(tr=>{
+    const p=parseFloat(tr.querySelector('.unit-price')?.textContent.replace(/[^\d.]/g,''))||0;
+    const q=parseFloat(tr.querySelector('.qty')?.textContent.replace(/[^\d.]/g,''))||0;
+    tr.querySelector('.amount').innerHTML=qbFmt(p*q);sub+=p*q;
+  });
+  const pct=parseFloat(document.getElementById('qb-inv-dpct').value)/100;
+  document.getElementById('qb-inv-subtotal').innerHTML=qbFmt(sub);
+  document.getElementById('qb-inv-total').innerHTML=qbFmt(sub);
+  document.getElementById('qb-inv-deposit').innerHTML=qbFmt(sub*pct);
+}
+
+function qbRecalcQuot(){
+  document.querySelectorAll('#qb-quot-body tr').forEach(tr=>{
+    const p=parseFloat(tr.querySelector('.q-price')?.textContent.replace(/[^\d.]/g,''))||0;
+    const q=parseFloat(tr.querySelector('.q-qty')?.textContent.replace(/[^\d.]/g,''))||0;
+    tr.querySelector('.q-amount').innerHTML=qbFmt(p*q);
+  });
+}
+
+function qbRecalcCont(){
+  document.querySelectorAll('#qb-cont-body tr').forEach(tr=>{
+    const p=parseFloat(tr.querySelector('.q-price')?.textContent.replace(/[^\d.]/g,''))||0;
+    const q=parseFloat(tr.querySelector('.q-qty')?.textContent.replace(/[^\d.]/g,''))||0;
+    tr.querySelector('.q-amount').innerHTML=qbFmt(p*q);
+  });
+}
+
+function qbToggleInc(btn){
+  const row=btn.closest('.qb-inc-row');
+  row.classList.toggle('qb-row-hidden');
+  btn.textContent=row.classList.contains('qb-row-hidden')?'Show':'Hide';
+}
+
+function qbOpenModal(tab){qbCurrentPrintTab=tab||'quot';document.getElementById('qb-confirm-modal').classList.add('qb-open');}
+function qbCloseModal(){document.getElementById('qb-confirm-modal').classList.remove('qb-open');}
+
+function qbPrintTab(tab){
+  ['inv','quot','cont','pkgs'].forEach(t=>document.getElementById('qb-panel-'+t).classList.toggle('qb-hidden-tab',t!==tab));
+  window.print();
+  setTimeout(()=>['inv','quot','cont','pkgs'].forEach(t=>document.getElementById('qb-panel-'+t).classList.toggle('qb-hidden-tab',t!==qbActiveTab)),500);
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// PACKAGE-DRIVEN DOCUMENTS — avoids retyping package details into every
+// Invoice / Quotation. `packages` (shared with the main app's state) is the
+// single source of truth; editing it in "Manage Packages" and saving
+// regenerates the Invoice items table and the Quotation package table.
+// ══════════════════════════════════════════════════════════════════════════
+
+function qbBuildDocRows(){
+  const invBody = document.getElementById('qb-inv-body');
+  const quotBody = document.getElementById('qb-quot-body');
+  const contBody = document.getElementById('qb-cont-body');
+  if(!invBody || !quotBody) return;
+
+  // Preserve any qty/price a staff member already typed, keyed by package id,
+  // so rebuilding (e.g. after Save Packages) doesn't wipe in-progress edits.
+  const prevInvQty = {};
+  invBody.querySelectorAll('tr').forEach(tr=>{
+    const id=tr.dataset.pkgId; if(id) prevInvQty[id]=tr.querySelector('.qty')?.textContent.trim();
+  });
+  const prevQuot = {};
+  quotBody.querySelectorAll('tr').forEach(tr=>{
+    const id=tr.dataset.pkgId; if(id) prevQuot[id]={qty:tr.querySelector('.q-qty')?.textContent.trim(), price:tr.querySelector('.q-price')?.textContent.trim()};
+  });
+  const prevCont = {};
+  if(contBody){
+    contBody.querySelectorAll('tr').forEach(tr=>{
+      const id=tr.dataset.pkgId; if(id) prevCont[id]={qty:tr.querySelector('.q-qty')?.textContent.trim(), price:tr.querySelector('.q-price')?.textContent.trim()};
+    });
+  }
+
+  invBody.innerHTML = packages.map(p=>{
+    const qty = prevInvQty[p.id] || '100';
+    const amt = (+p.price||0)*(parseFloat(qty)||0);
+    return `<tr data-pkg-id="${p.id}">
+      <td><span class="qb-item-name" contenteditable="false" data-ph="Item">${esc(p.name)}</span><span class="qb-item-sub" contenteditable="false" data-ph="Desc">${esc(p.desc)}</span></td>
+      <td><span contenteditable="false" data-ph="size">${esc(p.size)}</span></td>
+      <td><span contenteditable="false" data-ph="EDT/EDP">${esc(p.type)}</span></td>
+      <td class="qb-r"><span class="unit-price" contenteditable="false" data-ph="0.00" oninput="qbRecalcInv()">${qbFmt(+p.price||0)}</span></td>
+      <td class="qb-r"><span class="qty" contenteditable="false" data-ph="1" oninput="qbRecalcInv()">${esc(qty)}</span></td>
+      <td class="qb-r qb-amount-cell"><span class="amount">${qbFmt(amt)}</span></td>
+      <td class="qb-no-print"><button class="qb-del-row" onclick="qbDelRow(this)">&times;</button></td>
+    </tr>`;
+  }).join('');
+
+  // Quotation & Contract package tables: list every package, no selection —
+  // price/qty are always directly editable per-document, and editing them
+  // here never writes back to the maintained `packages` list.
+  const pkgOptionRow = (p, prev) => {
+    const qty = (prev && prev.qty) || '100';
+    const price = (prev && prev.price!=null && prev.price!=='') ? prev.price : (+p.price||0).toFixed(2);
+    const amt = (parseFloat(price)||0)*(parseFloat(qty)||0);
+    return `<tr data-pkg-id="${p.id}">
+      <td><span class="qb-item-name" contenteditable="false">${esc(p.name)}</span> <span class="qb-item-sub" contenteditable="false" data-ph="Desc">${esc(p.desc)}</span></td>
+      <td><span contenteditable="false">${esc(p.size)}</span></td>
+      <td><span contenteditable="false">${esc(p.type)}</span></td>
+      <td class="qb-r"><span class="q-price" contenteditable="true" oninput="qbRecalcQuot();qbRecalcCont()">${esc(price)}</span></td>
+      <td class="qb-r"><span class="q-qty" contenteditable="true" oninput="qbRecalcQuot();qbRecalcCont()">${esc(qty)}</span></td>
+      <td class="qb-r qb-q-amt"><span class="q-amount">${qbFmt(amt)}</span></td>
+      <td class="qb-no-print"><button class="qb-del-row" onclick="qbDelRow(this)">&times;</button></td>
+    </tr>`;
+  };
+
+  quotBody.innerHTML = packages.map(p=>pkgOptionRow(p, prevQuot[p.id])).join('');
+  if(contBody) contBody.innerHTML = packages.map(p=>pkgOptionRow(p, prevCont[p.id])).join('');
+
+  qbRecalcInv();
+  qbRecalcQuot();
+  qbRecalcCont();
+  qbPopulateItemPicker();
+}
+
+function qbRenderPackagesTable(){
+  const tbody=document.getElementById('qb-packages-body');
+  if(!tbody) return;
+  tbody.innerHTML = packages.map(p=>`<tr data-pkg-id="${p.id}">
+    <td><input type="text" class="qb-pkg-input" data-f="name" value="${esc(p.name)}" style="width:100%;border:none;border-bottom:1px solid transparent;background:transparent;font-family:var(--serif);font-size:14px;padding:6px 4px" onfocus="this.style.borderBottomColor='var(--gold)'" onblur="this.style.borderBottomColor='transparent'"/></td>
+    <td><input type="text" class="qb-pkg-input" data-f="desc" value="${esc(p.desc)}" style="width:100%;border:none;background:transparent;font-size:12px;color:var(--gray);padding:6px 4px"/></td>
+    <td><input type="text" class="qb-pkg-input" data-f="size" value="${esc(p.size)}" style="width:100%;border:none;background:transparent;font-size:13px;padding:6px 4px"/></td>
+    <td><input type="text" class="qb-pkg-input" data-f="type" value="${esc(p.type)}" style="width:100%;border:none;background:transparent;font-size:13px;padding:6px 4px"/></td>
+    <td class="qb-r"><input type="number" step="0.01" min="0" class="qb-pkg-input" data-f="price" value="${+p.price||0}" style="width:90px;text-align:right;border:none;background:transparent;font-size:13px;padding:6px 4px"/></td>
+    <td style="text-align:center"><input type="checkbox" class="qb-pkg-input" data-f="hasWebsite" ${p.hasWebsite?'checked':''}/></td>
+    <td><button class="qb-del-row" style="display:inline-flex" onclick="qbDeletePackageRow(this)" title="Remove package">&times;</button></td>
+  </tr>`).join('');
+}
+
+function qbAddPackage(){
+  const tbody=document.getElementById('qb-packages-body');
+  const tr=document.createElement('tr');
+  tr.innerHTML=`
+    <td><input type="text" class="qb-pkg-input" data-f="name" value="New Package" style="width:100%;border:none;background:transparent;font-family:var(--serif);font-size:14px;padding:6px 4px"/></td>
+    <td><input type="text" class="qb-pkg-input" data-f="desc" value="" style="width:100%;border:none;background:transparent;font-size:12px;color:var(--gray);padding:6px 4px"/></td>
+    <td><input type="text" class="qb-pkg-input" data-f="size" value="" style="width:100%;border:none;background:transparent;font-size:13px;padding:6px 4px"/></td>
+    <td><input type="text" class="qb-pkg-input" data-f="type" value="" style="width:100%;border:none;background:transparent;font-size:13px;padding:6px 4px"/></td>
+    <td class="qb-r"><input type="number" step="0.01" min="0" class="qb-pkg-input" data-f="price" value="0" style="width:90px;text-align:right;border:none;background:transparent;font-size:13px;padding:6px 4px"/></td>
+    <td style="text-align:center"><input type="checkbox" class="qb-pkg-input" data-f="hasWebsite"/></td>
+    <td><button class="qb-del-row" style="display:inline-flex" onclick="qbDeletePackageRow(this)" title="Remove package">&times;</button></td>`;
+  tbody.appendChild(tr);
+  tr.querySelector('[data-f="name"]').focus();
+}
+
+function qbDeletePackageRow(btn){
+  btn.closest('tr').remove();
+}
+
+function qbSavePackages(){
+  const rows=document.querySelectorAll('#qb-packages-body tr');
+  const newPackages=[];
+  rows.forEach(tr=>{
+    const get=f=>tr.querySelector(`[data-f="${f}"]`);
+    const name=get('name').value.trim();
+    if(!name) return;
+    newPackages.push({
+      id: tr.dataset.pkgId || uid(),
+      name, desc:get('desc').value.trim(), size:get('size').value.trim(),
+      type:get('type').value.trim(), price:parseFloat(get('price').value)||0,
+      hasWebsite:get('hasWebsite').checked
+    });
+  });
+  if(!newPackages.length){ alert('Add at least one package before saving.'); return; }
+  packages = newPackages;
+  qbRenderPackagesTable();
+  qbBuildDocRows();
+  if(typeof save==='function') save();
+  alert('Packages saved. The Invoice and Quotation tabs now reflect these details.');
+}
+
+qbBuildDocRows();
+qbRenderPackagesTable();
+
+
 </script>
 
 <!-- SAVE INDICATOR -->
