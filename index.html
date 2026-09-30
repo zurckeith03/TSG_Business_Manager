@@ -183,6 +183,7 @@ body{background:var(--offwhite);font-family:var(--sans);color:var(--dark);min-he
 .tsg-table tbody td{padding:11px 14px;vertical-align:middle}
 .badge{display:inline-block;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;padding:2px 8px;white-space:nowrap}
 .badge-dark{background:var(--dark);color:var(--gold)}
+.badge-gold{background:var(--gold);color:var(--dark);font-weight:600}
 .badge-green{background:#D1FAE5;color:#065F46}
 .badge-red{background:#FEE2E2;color:#991B1B}
 .badge-blue{background:#DBEAFE;color:#1E40AF}
@@ -717,11 +718,13 @@ table.qb-info-table td[data-empty="true"]::before{content:attr(data-ph);color:va
   <div class="stats-row" id="inv-stats"></div>
   <div style="background:var(--white);padding:14px 20px;border-left:4px solid var(--gold);margin-bottom:16px;font-size:13px;color:var(--gray);display:flex;align-items:center;gap:16px;flex-wrap:wrap">
     <span><strong style="color:var(--dark)">Manual Stock System.</strong> Set any fragrance stock directly. Orders marked Done auto-deduct 1 bottle from matching fragrance.</span>
-    <button class="tb-btn" style="margin-left:auto;padding:6px 14px;font-size:10px" onclick="openBulkRestock()">&#128230; Bulk Restock</button>
+    <button class="tb-btn outline" style="margin-left:auto;padding:6px 14px;font-size:10px" onclick="printInvCodes()">&#128438; Print Stock Codes</button>
+    <button class="tb-btn" style="padding:6px 14px;font-size:10px" onclick="openBulkRestock()">&#128230; Bulk Restock</button>
   </div>
   <div class="tbl-wrap">
     <table class="tsg-table" id="inv-table">
       <thead><tr>
+        <th onclick="sort('inv','code')">Code</th>
         <th onclick="sort('inv','batch')">Batch</th>
         <th onclick="sort('inv','name')">Scent Name</th>
         <th class="c" onclick="sort('inv','stock')">Stock</th>
@@ -1310,6 +1313,12 @@ table.qb-info-table td[data-empty="true"]::before{content:attr(data-ph);color:va
     <div class="modal-title" id="inv-modal-title">Add Fragrance</div>
     <div class="mf"><label>Batch</label><select id="inv-f-batch"></select></div>
     <div class="mf"><label>Scent Name</label><input id="inv-f-name" placeholder="e.g. Baccarat Rouge"/></div>
+    <div class="mf"><label>Stock Code <span style="font-weight:400;color:var(--lgray);text-transform:none;letter-spacing:0">— write this on the physical bottle for quick lookup</span></label>
+      <div style="display:flex;gap:8px">
+        <input id="inv-f-code" placeholder="e.g. 001 or YSL-001" style="flex:1;font-family:var(--serif);font-size:15px;letter-spacing:0.04em"/>
+        <button type="button" class="tb-btn outline" style="padding:0 14px;white-space:nowrap" onclick="document.getElementById('inv-f-code').value=nextInvCode()">Auto</button>
+      </div>
+    </div>
     <div class="mgrid">
       <div class="mf"><label>Current Stock (bottles)</label><input type="number" id="inv-f-stock" min="0" value="0" placeholder="e.g. 4"/></div>
       <div class="mf"><label>Min Stock Alert</label><input type="number" id="inv-f-minstk" min="0" value="2" placeholder="e.g. 2"/></div>
@@ -1728,7 +1737,7 @@ function save(){
 
 // Map of local array -> {table, mapRow} used to push current state to Supabase
 const SB_TABLES = {
-  inv:        { table:'inventory',    map:i=>({id:i.id, batch:i.batch, name:i.name, stock:+i.stock||0, min_stock:+i.minStock||2, remarks:i.remarks||''}) },
+  inv:        { table:'inventory',    map:i=>({id:i.id, batch:i.batch, name:i.name, stock:+i.stock||0, min_stock:+i.minStock||2, remarks:i.remarks||'', code:i.code||''}) },
   bottleStock:{ table:'bottle_stock', map:b=>({id:b.id, name:b.name, size:b.size, stock:+b.stock||0, total_added:+b.totalAdded||0, total_used:+b.totalUsed||0, notes:b.notes||''}) },
   orders:     { table:'orders',       map:o=>({id:o.id, num:+o.num||0, batch:o.batch, name:o.name, price:+o.price||0, gender:o.gender, customer:o.customer, date:o.date||null, status:o.status, delivered:o.delivered, paid:o.paid, payment:o.payment, stock_deducted:!!o.stockDeducted}) },
   purchases:  { table:'purchases',    map:p=>({id:p.id, batch:p.batch, item:p.item, qty:+p.qty||0, price:+p.price||0, total:+p.total||0, payment:p.payment||'Cash'}) },
@@ -1787,8 +1796,8 @@ function buildWorkbook(){
   const wb=XLSX.utils.book_new();
 
   // Inventory (new manual stock format)
-  const invRows=[['Batch','Scent Name','Stock','Min Stock Alert','Remarks']];
-  inv.forEach(i=>invRows.push([i.batch,i.name,getStock(i),i.minStock||2,i.remarks||'']));
+  const invRows=[['Code','Batch','Scent Name','Stock','Min Stock Alert','Remarks']];
+  inv.forEach(i=>invRows.push([i.code||'',i.batch,i.name,getStock(i),i.minStock||2,i.remarks||'']));
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(invRows),'Inventory');
   // Bottle Stock
   const botRows=[['Bottle Type','Size','Current Stock','Total Added','Total Used','Notes']];
@@ -1962,7 +1971,7 @@ async function load(){
   for(const r of [invR,botR,ordR,purR,batR,catR,costR]){
     if(r.error) throw r.error;
   }
-  inv = (invR.data||[]).map(r=>({id:r.id,batch:r.batch,name:r.name,stock:r.stock,minStock:r.min_stock,remarks:r.remarks||''}));
+  inv = (invR.data||[]).map(r=>({id:r.id,batch:r.batch,name:r.name,stock:r.stock,minStock:r.min_stock,remarks:r.remarks||'',code:r.code||''}));
   bottleStock = (botR.data||[]).map(r=>({id:r.id,name:r.name,size:r.size,stock:r.stock,totalAdded:r.total_added,totalUsed:r.total_used,notes:r.notes||''}));
   orders = (ordR.data||[]).map(r=>({id:r.id,num:r.num,batch:r.batch,name:r.name,price:r.price,gender:r.gender,customer:r.customer,date:r.date,status:r.status,delivered:r.delivered,paid:r.paid,payment:r.payment,stockDeducted:r.stock_deducted}));
   purchases = (purR.data||[]).map(r=>({id:r.id,batch:r.batch,item:r.item,qty:r.qty,price:r.price,total:r.total,payment:r.payment||'Cash'}));
@@ -2206,12 +2215,13 @@ function renderInv(){
   const search=document.getElementById('tb-search').value.toLowerCase();
   const batch=document.getElementById('tb-batch-filter').value;
   let data=inv.filter(i=>{
-    return (!batch||i.batch===batch)&&(i.name.toLowerCase().includes(search)||i.batch.toLowerCase().includes(search)||(i.remarks||'').toLowerCase().includes(search));
+    return (!batch||i.batch===batch)&&(i.name.toLowerCase().includes(search)||i.batch.toLowerCase().includes(search)||(i.remarks||'').toLowerCase().includes(search)||(i.code||'').toLowerCase().includes(search));
   });
   const ss=sortState.inv;
   data.sort((a,b)=>{
     let av=ss.k==='stock'?getStock(a):a[ss.k];
     let bv=ss.k==='stock'?getStock(b):b[ss.k];
+    if(ss.k==='code'){av=av||'';bv=bv||'';}
     return typeof av==='string'?av.localeCompare(bv)*ss.d:(av-bv)*ss.d;
   });
   const totalStock=inv.reduce((a,i)=>a+getStock(i),0);
@@ -2225,7 +2235,7 @@ function renderInv(){
     <div class="stat-card red"><div class="stat-lbl">Out of Stock</div><div class="stat-val">${outCnt}</div><div class="stat-sub">0 bottles remaining</div></div>
     <div class="stat-card blue"><div class="stat-lbl">Auto-Deducted</div><div class="stat-val">${autoDeducted}</div><div class="stat-sub">From done orders</div></div>`;
   const tbody=document.getElementById('inv-body');
-  if(!data.length){tbody.innerHTML=`<tr><td colspan="6" class="empty-state"><p>No entries found.</p></td></tr>`;document.getElementById('inv-pagination').innerHTML='';return;}
+  if(!data.length){tbody.innerHTML=`<tr><td colspan="7" class="empty-state"><p>No entries found.</p></td></tr>`;document.getElementById('inv-pagination').innerHTML='';return;}
   const info=paginate('inv',data);
   tbody.innerHTML=info.pageData.map(i=>{
     const s=getStock(i);
@@ -2233,6 +2243,7 @@ function renderInv(){
     const rc=s===0?'row-out':s<=min?'row-low':'';
     const vc=s===0?'rem-out':s<=min?'rem-low':'rem-ok';
     return `<tr class="${rc}">
+      <td>${i.code?`<span class="badge badge-gold" style="font-family:var(--serif);font-size:12px;letter-spacing:0.06em">${esc(i.code)}</span>`:`<span style="color:var(--lgray);font-size:11px">&#8212;</span>`}</td>
       <td><span class="badge badge-dark">${esc(i.batch)}</span></td>
       <td><strong>${esc(i.name)}</strong></td>
       <td class="c"><span class="${vc}" style="font-family:var(--serif);font-size:18px;font-weight:600">${s}</span></td>
@@ -2493,6 +2504,7 @@ function openAdd(){
     document.getElementById('inv-save-btn').textContent='Save';
     document.getElementById('inv-f-batch').value=document.getElementById('inv-f-batch').options[0]?.value||'';
     document.getElementById('inv-f-name').value='';
+    document.getElementById('inv-f-code').value=nextInvCode();
     document.getElementById('inv-f-stock').value='0';
     document.getElementById('inv-f-minstk').value='2';
     document.getElementById('inv-f-remarks').value='';
@@ -2584,6 +2596,7 @@ function openEdit(tab,id){
     document.getElementById('inv-save-btn').textContent='Update';
     document.getElementById('inv-f-batch').value=e.batch;
     document.getElementById('inv-f-name').value=e.name;
+    document.getElementById('inv-f-code').value=e.code||'';
     document.getElementById('inv-f-stock').value=getStock(e);
     document.getElementById('inv-f-minstk').value=e.minStock||2;
     document.getElementById('inv-f-remarks').value=e.remarks||'';
@@ -2671,10 +2684,53 @@ function openEdit(tab,id){
   }
 }
 
+// ── STOCK CODE HELPERS ──────────────────────────────────────────────────────
+// Auto-suggests the next sequential 3-digit code (001, 002, ...) based on the
+// highest existing purely-numeric code. Staff can still type a custom code
+// (e.g. "YSL-001") — this is just a convenient starting point.
+function nextInvCode(){
+  let max=0;
+  inv.forEach(i=>{
+    const n=parseInt(i.code,10);
+    if(!isNaN(n) && /^\d+$/.test((i.code||'').trim()) && n>max) max=n;
+  });
+  return String(max+1).padStart(3,'0');
+}
+
+function printInvCodes(){
+  const rows=[...inv].sort((a,b)=>(a.code||'').localeCompare(b.code||'')||a.name.localeCompare(b.name));
+  const w=window.open('','_blank');
+  if(!w){ alert('Please allow pop-ups to print stock codes.'); return; }
+  const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>TSG Stock Codes</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'DM Sans',Arial,sans-serif;padding:24px;color:#1A1A2E}
+    h1{font-family:Georgia,serif;font-size:20px;margin-bottom:4px}
+    .sub{font-size:12px;color:#888;margin-bottom:20px}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th{text-align:left;background:#1A1A2E;color:#C9A84C;padding:8px 10px;font-size:10px;letter-spacing:0.08em;text-transform:uppercase}
+    td{padding:8px 10px;border-bottom:1px solid #E0DDD6}
+    .code{font-family:Georgia,serif;font-weight:700;font-size:15px;letter-spacing:0.05em}
+    .out{color:#C0392B;font-weight:600}
+    @media print{ @page{margin:0.5in} }
+  </style></head><body>
+  <h1>The Scent Gallery — Stock Code Sheet</h1>
+  <div class="sub">Printed ${new Date().toLocaleDateString('en-PH',{year:'numeric',month:'long',day:'numeric'})} — match each code to the physical bottle label</div>
+  <table><thead><tr><th>Code</th><th>Batch</th><th>Scent Name</th><th>Stock</th></tr></thead><tbody>
+  ${rows.map(i=>`<tr><td class="code">${esc(i.code||'—')}</td><td>${esc(i.batch)}</td><td>${esc(i.name)}</td><td class="${getStock(i)===0?'out':''}">${getStock(i)}</td></tr>`).join('')}
+  </tbody></table>
+  </body></html>`;
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  setTimeout(()=>w.print(),300);
+}
+
 // ── SAVE FUNCTIONS ───────────────────────────────────────────────────────────
 function saveInv(){
   const batch=document.getElementById('inv-f-batch').value;
   const name=document.getElementById('inv-f-name').value.trim();
+  const code=document.getElementById('inv-f-code').value.trim();
   const stock=parseInt(document.getElementById('inv-f-stock').value);
   const minStock=parseInt(document.getElementById('inv-f-minstk').value)||2;
   const remarks=document.getElementById('inv-f-remarks').value.trim();
@@ -2682,13 +2738,14 @@ function saveInv(){
   if(!name) errs.push('Scent name is required.');
   if(!batch) errs.push('Please select a batch.');
   if(isNaN(stock)||stock<0) errs.push('Stock must be 0 or greater.');
+  if(code && inv.some(x=>x.code && x.code.toLowerCase()===code.toLowerCase() && x.id!==editId)) errs.push('That stock code is already used by another fragrance — pick a different one.');
   if(errs.length){alert('Please fix the following:\n\n'+errs.map(e=>'• '+e).join('\n'));return;}
   if(editId){
     confirmSave('fragrance entry', ()=>{
       const i=inv.find(x=>x.id===editId);
       if(i){
         const oldStock=getStock(i);
-        i.batch=batch;i.name=name;i.stock=stock;i.minStock=minStock;i.remarks=remarks;
+        i.batch=batch;i.name=name;i.code=code;i.stock=stock;i.minStock=minStock;i.remarks=remarks;
         const delta=stock-oldStock;
         if(delta!==0){
           logStock({type:delta>0?'ADD':'REMOVE', itemType:'fragrance', itemName:name, batch, qty:delta, resultingStock:stock, reason:'Edited fragrance entry ('+oldStock+' → '+stock+')'});
@@ -2697,7 +2754,7 @@ function saveInv(){
       save(); render(); closeModal('inv-modal');
     });
   } else {
-    inv.push({id:uid(),batch,name,stock,minStock,remarks});
+    inv.push({id:uid(),batch,name,code,stock,minStock,remarks});
     if(stock>0){
       logStock({type:'ADD', itemType:'fragrance', itemName:name, batch, qty:stock, resultingStock:stock, reason:'New fragrance entry created'});
     }
@@ -3522,7 +3579,7 @@ function openBulkRestock(){
     const s = getStock(i);
     const color = s===0?'var(--red)':s<=(i.minStock||2)?'var(--orange)':'var(--green)';
     return `<div style="display:grid;grid-template-columns:1fr 80px 80px;gap:8px;align-items:center;padding:8px 4px;border-bottom:1px solid var(--line)">
-      <div style="font-size:13px"><strong>${esc(i.name)}</strong> <span style="font-size:11px;color:var(--lgray)">${esc(i.batch)}</span>
+      <div style="font-size:13px">${i.code?`<span style="font-family:var(--serif);font-weight:700;color:var(--gold);margin-right:6px">${esc(i.code)}</span>`:''}<strong>${esc(i.name)}</strong> <span style="font-size:11px;color:var(--lgray)">${esc(i.batch)}</span>
         <span style="color:${color};font-size:12px;font-weight:600;margin-left:8px">${s} left</span></div>
       <input type="number" min="0" placeholder="New qty"
         data-inv-id="${i.id}" class="bulk-restock-input"
@@ -3659,8 +3716,8 @@ function updateFilterChips(){
 function exportCSV(){
   let rows=[], headers=[], tab=activeTab;
   if(tab==='inv'){
-    headers=['Batch','Scent Name','Qty Oil','Bottles Filled','Remaining','Remarks'];
-    rows=inv.map(i=>[i.batch,i.name,i.oil,i.bottles,rem(i.oil,i.bottles),i.remarks]);
+    headers=['Code','Batch','Scent Name','Stock','Min Stock Alert','Remarks'];
+    rows=inv.map(i=>[i.code||'',i.batch,i.name,getStock(i),i.minStock||2,i.remarks||'']);
   } else if(tab==='orders'){
     headers=['#','Fragrance','Price','Customer','Gender','Date','Status','Batch','Delivered','Paid','Payment'];
     rows=orders.map(o=>[o.num,o.name,o.price,o.customer,o.gender,o.date,o.status,o.batch,o.delivered,o.paid,o.payment]);
